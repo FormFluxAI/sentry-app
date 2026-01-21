@@ -3,477 +3,459 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VANGUARD FORTRESS</title>
+    <title>VANGUARD TITAN</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         :root {
             --neon-blue: #00f3ff;
             --neon-green: #00ff41;
             --neon-red: #ff003c;
-            --neon-amber: #ffae00;
-            --bg: #080808;
-            --panel: #141414;
+            --bg: #050505;
+            --panel: #121212;
             --border: 1px solid #333;
         }
-
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; font-family: 'Segoe UI', Roboto, sans-serif; }
         
         body {
-            background-color: var(--bg);
-            color: #eee; margin: 0; height: 100vh; overflow: hidden;
+            background-color: var(--bg); color: #eee; margin: 0; height: 100vh; overflow: hidden;
             display: flex; flex-direction: column;
         }
 
-        /* --- 1. LOGIN GATEKEEPER --- */
-        #login-gate {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 30px; transition: opacity 0.5s;
+        /* --- LOGIN --- */
+        #login-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s;
         }
-        .login-logo { font-size: 2.5rem; font-weight: 900; letter-spacing: 5px; color: var(--neon-blue); margin-bottom: 10px; text-shadow: 0 0 20px rgba(0, 243, 255, 0.4); }
-        .login-input {
-            width: 100%; max-width: 300px; padding: 15px; margin: 10px 0;
-            background: #222; border: 1px solid #444; color: white; border-radius: 8px; text-align: center;
-        }
-        .login-btn {
-            width: 100%; max-width: 300px; padding: 15px; margin-top: 20px;
-            background: var(--neon-blue); color: #000; border: none; font-weight: bold;
-            border-radius: 8px; font-size: 1rem; cursor: pointer;
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
-        }
+        .login-box { width: 80%; max-width: 300px; text-align: center; }
+        .login-input { width: 100%; padding: 15px; margin: 10px 0; background: #222; border: 1px solid #444; color: white; border-radius: 8px; text-align: center; }
+        .login-btn { width: 100%; padding: 15px; background: var(--neon-blue); font-weight: bold; border: none; border-radius: 8px; margin-top: 20px; cursor: pointer; }
 
-        /* --- 2. HEADER & NAV --- */
+        /* --- HEADER --- */
         header {
-            padding: 15px; border-bottom: var(--border); background: rgba(0,0,0,0.8);
+            padding: 15px; background: rgba(0,0,0,0.9); border-bottom: var(--border);
             display: flex; justify-content: space-between; align-items: center; z-index: 100;
         }
-        .brand { color: var(--neon-blue); font-weight: 800; letter-spacing: 1px; }
+        .brand { color: var(--neon-blue); font-weight: 900; letter-spacing: 1px; }
         .back-btn { display: none; background: none; border: none; color: white; font-size: 1.2rem; }
 
-        /* --- 3. MAIN VIEWS --- */
+        /* --- VIEWS --- */
         #viewport { flex: 1; position: relative; overflow: hidden; }
         .view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            overflow-y: auto; padding: 20px; padding-bottom: 100px;
-            background: var(--bg); transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-            transform: translateX(100%); /* Hidden by default */
+            overflow-y: auto; padding: 15px; padding-bottom: 100px;
+            background: var(--bg); transition: transform 0.3s; transform: translateX(100%);
         }
-        .view.active { transform: translateX(0); z-index: 10; }
-        .view.behind { transform: translateX(-20%); opacity: 0.5; }
+        .view.active { transform: translateX(0); }
 
-        /* DASHBOARD GRID */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        /* --- GRID --- */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .card {
-            background: var(--panel); border: var(--border); border-radius: 12px;
-            padding: 15px; position: relative; min-height: 140px;
-            display: flex; flex-direction: column; justify-content: space-between;
+            background: var(--panel); border: var(--border); border-radius: 10px; padding: 15px;
+            display: flex; flex-direction: column; justify-content: space-between; min-height: 120px;
+            position: relative;
         }
-        .card.armed { border-color: var(--neon-green); background: rgba(0, 50, 0, 0.3); }
+        .card.armed { border-color: var(--neon-green); background: rgba(0, 50, 0, 0.2); }
         .card.alert { border-color: var(--neon-red); background: rgba(50, 0, 0, 0.5); animation: flash 0.5s infinite; }
-        .card h3 { margin: 0; font-size: 0.9rem; }
-        .card p { margin: 5px 0 0 0; font-size: 0.7rem; color: #888; }
-        .status-dot {
-            width: 10px; height: 10px; border-radius: 50%; background: #333;
-            position: absolute; top: 15px; right: 15px;
-        }
-        .card.armed .status-dot { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
-
-        /* MODULE SETTINGS (DETAIL VIEW) */
-        .setting-row { margin-bottom: 25px; }
-        .setting-label { display: block; margin-bottom: 10px; color: #aaa; font-size: 0.8rem; }
-        input[type="range"] { width: 100%; background: #333; height: 4px; outline: none; -webkit-appearance: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--neon-blue); border-radius: 50%; }
+        .dot { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; background: #333; border-radius: 50%; }
+        .card.armed .dot { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
         
+        h3 { margin: 0; font-size: 0.85rem; margin-top: 5px; }
+        p { margin: 0; font-size: 0.65rem; color: #888; }
+        .icon { font-size: 1.8rem; color: #666; }
+        .card.armed .icon { color: var(--neon-green); }
+
+        /* --- DETAIL VIEW --- */
         .big-toggle {
             width: 100%; padding: 20px; background: #222; border: 1px solid #444; color: #fff;
-            font-size: 1.2rem; border-radius: 12px; margin-top: 30px;
+            font-size: 1.2rem; border-radius: 12px; margin-top: 20px;
         }
-        .big-toggle.active { background: var(--neon-green); color: #000; border-color: var(--neon-green); }
+        .big-toggle.armed { background: var(--neon-green); color: black; border-color: var(--neon-green); }
+        
+        .slider-container { margin: 20px 0; }
+        input[type=range] { width: 100%; background: #333; }
 
-        /* --- 4. PANIC FOOTER --- */
+        /* --- FOOTER --- */
         .footer {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 80px;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
             background: #000; border-top: var(--border); display: flex; z-index: 200;
             padding: 10px; gap: 10px;
         }
-        .panic-btn {
-            flex: 2; background: var(--neon-red); color: white; border: none; border-radius: 8px;
-            font-size: 1.5rem; font-weight: 900; letter-spacing: 2px;
-            box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
-        }
+        .panic-btn { flex: 2; background: var(--neon-red); color: white; border: none; border-radius: 8px; font-weight: 900; letter-spacing: 2px; }
         .log-btn { flex: 1; background: #222; color: #ccc; border: 1px solid #444; border-radius: 8px; }
 
-        /* HIDDEN */
-        video { position: fixed; top: -2000px; }
         @keyframes flash { 0%, 100% { border-color: var(--neon-red); } 50% { border-color: #000; } }
+        video { position: fixed; top: -5000px; }
     </style>
 </head>
 <body>
 
-    <div id="login-gate">
-        <div class="login-logo">VANGUARD</div>
-        <div style="color: #666; margin-bottom: 30px; font-size: 0.8rem;">FORTRESS EDITION v4.0</div>
-        
-        <input type="email" class="login-input" placeholder="Secure ID (Any Email)" id="loginEmail">
-        <input type="password" class="login-input" placeholder="Password" id="loginPass">
-        
-        <button class="login-btn" onclick="authenticate()">AUTHENTICATE</button>
-        <p style="color: #444; font-size: 0.7rem; margin-top: 20px;">BIOMETRIC BYPASS READY</p>
+    <div id="login-layer">
+        <div class="login-box">
+            <h1 style="color:var(--neon-blue); letter-spacing:3px; margin-bottom:0;">VANGUARD</h1>
+            <p style="color:#666; font-size:0.8rem; margin-bottom:30px;">TITAN EDITION v5.0</p>
+            <input type="email" class="login-input" placeholder="ACCESS ID (Any Email)" id="loginId">
+            <button class="login-btn" onclick="login()">INITIALIZE SYSTEM</button>
+        </div>
     </div>
 
     <header>
-        <button class="back-btn" id="backBtn" onclick="navTo('dashboard')"><i class="material-icons">arrow_back</i></button>
+        <button class="back-btn" id="backBtn" onclick="goHome()"><i class="material-icons">arrow_back</i></button>
         <div class="brand">VANGUARD</div>
-        <i class="material-icons" style="color: #444;" id="connIcon">wifi</i>
+        <div style="font-size:0.7rem; color:#666;" id="gps-status">GPS: ...</div>
     </header>
 
     <div id="viewport">
-        
         <div id="dashboard" class="view active">
-            <h2 style="color: #666; font-size: 0.8rem; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">MODULE STATUS</h2>
-            
+            <div style="margin-bottom: 10px; font-size: 0.7rem; color: #555; font-weight: bold;">VISUAL & KINETIC</div>
             <div class="grid">
-                <div class="card" id="card-intruder" onclick="openSettings('intruder')">
-                    <div class="status-dot"></div>
-                    <i class="material-icons" style="font-size: 2rem; color: #ccc;">motion_photos_on</i>
-                    <div><h3>Intruder</h3><p>Camera Motion</p></div>
+                <div class="card" id="card-intruder" onclick="openDetail('intruder')">
+                    <div class="dot"></div><i class="material-icons icon">motion_photos_on</i>
+                    <div><h3>Intruder</h3><p>Motion Cam</p></div>
                 </div>
-
-                <div class="card" id="card-seismic" onclick="openSettings('seismic')">
-                    <div class="status-dot"></div>
-                    <i class="material-icons" style="font-size: 2rem; color: #ccc;">vibration</i>
-                    <div><h3>Seismic</h3><p>Door/Vibration</p></div>
+                <div class="card" id="card-seismic" onclick="openDetail('seismic')">
+                    <div class="dot"></div><i class="material-icons icon">vibration</i>
+                    <div><h3>Seismic</h3><p>Door Guard</p></div>
                 </div>
-
-                <div class="card" id="card-lumen" onclick="openSettings('lumen')">
-                    <div class="status-dot"></div>
-                    <i class="material-icons" style="font-size: 2rem; color: #ccc;">light_mode</i>
-                    <div><h3>Lumen</h3><p>Pocket/Bag Trap</p></div>
+                <div class="card" id="card-lumen" onclick="openDetail('lumen')">
+                    <div class="dot"></div><i class="material-icons icon">light_mode</i>
+                    <div><h3>Lumen</h3><p>Pocket Trap</p></div>
                 </div>
+                <div class="card" id="card-snoop" onclick="openDetail('snoop')">
+                    <div class="dot"></div><i class="material-icons icon">touch_app</i>
+                    <div><h3>Snoop</h3><p>Device Tilt</p></div>
+                </div>
+            </div>
 
-                <div class="card" id="card-audio" onclick="openSettings('audio')">
-                    <div class="status-dot"></div>
-                    <i class="material-icons" style="font-size: 2rem; color: #ccc;">graphic_eq</i>
+            <div style="margin: 20px 0 10px 0; font-size: 0.7rem; color: #555; font-weight: bold;">ENVIRONMENTAL & LOGIC</div>
+            <div class="grid">
+                <div class="card" id="card-audio" onclick="openDetail('audio')">
+                    <div class="dot"></div><i class="material-icons icon">graphic_eq</i>
                     <div><h3>Audio</h3><p>Gunshot/Scream</p></div>
                 </div>
-
-                <div class="card" id="card-wreck" onclick="openSettings('wreck')">
-                    <div class="status-dot"></div>
-                    <i class="material-icons" style="font-size: 2rem; color: #ccc;">car_crash</i>
+                <div class="card" id="card-wreck" onclick="openDetail('wreck')">
+                    <div class="dot"></div><i class="material-icons icon">car_crash</i>
                     <div><h3>Wreck</h3><p>Impact Detect</p></div>
                 </div>
-
-                <div class="card" id="card-snoop" onclick="openSettings('snoop')">
-                    <div class="status-dot"></div>
-                    <i class="material-icons" style="font-size: 2rem; color: #ccc;">touch_app</i>
-                    <div><h3>Snoop</h3><p>Device Moved</p></div>
+                 <div class="card" id="card-mag" onclick="openDetail('mag')">
+                    <div class="dot"></div><i class="material-icons icon">explore</i>
+                    <div><h3>Mag-Field</h3><p>Metal Detect</p></div>
+                </div>
+                <div class="card" id="card-power" onclick="openDetail('power')">
+                    <div class="dot"></div><i class="material-icons icon">battery_alert</i>
+                    <div><h3>Pwr Leech</h3><p>Cable Unplug</p></div>
+                </div>
+                <div class="card" id="card-deadman" onclick="openDetail('deadman')">
+                    <div class="dot"></div><i class="material-icons icon">hourglass_bottom</i>
+                    <div><h3>Dead Man</h3><p>Safety Timer</p></div>
+                </div>
+                <div class="card" id="card-geo" onclick="openDetail('geo')">
+                    <div class="dot"></div><i class="material-icons icon">share_location</i>
+                    <div><h3>Perimeter</h3><p>GPS Fence</p></div>
                 </div>
             </div>
         </div>
 
-        <div id="detail-view" class="view">
-            <h1 id="detail-title" style="color: var(--neon-blue); margin-top: 0;">MODULE NAME</h1>
-            <p id="detail-desc" style="color: #888; margin-bottom: 30px;">Description goes here.</p>
-
-            <div class="setting-row">
-                <span class="setting-label">SENSITIVITY: <span id="sens-val" style="color: white;">50%</span></span>
-                <input type="range" min="1" max="100" value="50" id="sens-slider" oninput="updateSensDisplay(this.value)">
+        <div id="detail" class="view">
+            <h1 id="det-title" style="color:var(--neon-blue); margin-top:0;">MODULE</h1>
+            <p id="det-desc" style="color:#888;">Description</p>
+            
+            <div class="slider-container" id="sens-ui">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <span style="font-size:0.8rem; color:#aaa;">SENSITIVITY</span>
+                    <span id="det-val" style="font-size:0.8rem; color:white;">50%</span>
+                </div>
+                <input type="range" min="1" max="100" id="det-slider" oninput="updateSens(this.value)">
             </div>
 
-            <button class="big-toggle" id="arm-toggle" onclick="toggleCurrentModule()">ARM MODULE</button>
+            <div id="dm-ui" style="display:none; text-align:center; margin:20px 0;">
+                <div id="dm-timer" style="font-size:3rem; font-family:monospace; color:var(--neon-red);">05:00</div>
+                <button onclick="resetDeadman()" style="padding:10px; background:#333; color:white; border:none; border-radius:5px; margin-top:10px;">RESET TIMER</button>
+            </div>
 
-            <div style="margin-top: 30px; padding: 15px; background: #111; border-radius: 8px;">
-                <h4 style="margin: 0 0 10px 0;">Live Readout</h4>
-                <div id="live-readout" style="font-family: monospace; color: var(--neon-green);">Waiting for data...</div>
+            <button class="big-toggle" id="arm-btn" onclick="toggleArm()">ARM MODULE</button>
+
+            <div style="background:#111; padding:15px; border-radius:8px; margin-top:20px;">
+                <label style="font-size:0.7rem; color:#555;">LIVE SENSOR DATA</label>
+                <div id="live-data" style="font-family:monospace; color:var(--neon-green); font-size:1.1rem; margin-top:5px;">--</div>
             </div>
         </div>
-
     </div>
 
     <div class="footer">
-        <button class="panic-btn" onclick="triggerPanic()">PANIC</button>
-        <button class="log-btn" onclick="downloadReport()"><i class="material-icons">download</i></button>
+        <button class="panic-btn" onclick="panic()">PANIC</button>
+        <button class="log-btn" onclick="downloadLogs()"><i class="material-icons">download</i></button>
     </div>
 
     <video id="cam" autoplay playsinline muted></video>
     <canvas id="cvs" style="display:none;"></canvas>
 
 <script>
-    // --- 1. SYSTEM STATE ---
-    const modules = {
-        intruder: { name: "Intruder Cam", desc: "Detects pixel changes in video feed.", armed: false, sens: 50, val: 0 },
-        seismic:  { name: "Seismic Sentry", desc: "Detects micro-vibrations (Place on door).", armed: false, sens: 80, val: 0 }, // High sens default
-        lumen:    { name: "Lumen Guard", desc: "Alarms on sudden light (Pocket/Bag removal).", armed: false, sens: 50, val: 0 },
-        audio:    { name: "Audio Spotter", desc: "Detects high decibel spikes.", armed: false, sens: 60, val: 0 },
-        wreck:    { name: "Wreck Monitor", desc: "Detects high G-Force impacts.", armed: false, sens: 40, val: 0 },
-        snoop:    { name: "Snoop Trap", desc: "Detects device tilt/pickup.", armed: false, sens: 90, val: 0 }
+    // --- 1. CONFIG & STATE ---
+    const mods = {
+        intruder: { name:"Intruder", desc:"Visual Motion Detection", armed:false, sens:50, type:'visual' },
+        seismic: { name:"Seismic", desc:"Micro-Vibration (Door/Surface)", armed:false, sens:85, type:'kinetic' },
+        lumen: { name:"Lumen", desc:"Sudden Light (Pocket Trap)", armed:false, sens:50, type:'visual' },
+        snoop: { name:"Snoop", desc:"Device Tilt/Movement", armed:false, sens:90, type:'kinetic' },
+        audio: { name:"Audio", desc:"Gunshot/Impact Sound", armed:false, sens:70, type:'audio' },
+        wreck: { name:"Wreck", desc:"High G-Force Crash", armed:false, sens:40, type:'kinetic' },
+        mag: { name:"Mag-Field", desc:"Magnetic Interference", armed:false, sens:60, type:'env' },
+        power: { name:"Pwr Leech", desc:"Charger Disconnect", armed:false, sens:null, type:'logic' },
+        deadman: { name:"Dead Man", desc:"Inactivity Timer", armed:false, sens:null, type:'logic' },
+        geo: { name:"Perimeter", desc:"50m GPS Geofence", armed:false, sens:null, type:'env' }
     };
 
-    let currentModId = null;
+    let curMod = null;
     let stream = null;
     let audioCtx, analyser;
     let logs = [];
-
-    // --- 2. LOGIN & INIT ---
-    function authenticate() {
-        const email = document.getElementById('loginEmail').value;
-        if(email.length > 0) {
-            document.getElementById('login-gate').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('login-gate').style.display = 'none';
-                initSensors();
-            }, 500);
-        } else {
-            alert("Enter an ID to create session logs.");
-        }
+    let watchId = null;
+    let startLoc = null;
+    let dmTime = 300; 
+    let dmInt = null;
+    let lastAcc = null;
+    let lastLight = 0;
+    
+    // --- 2. INIT ---
+    function login() {
+        if(document.getElementById('loginId').value.length < 1) { alert("Please enter an ID"); return; }
+        document.getElementById('login-layer').style.opacity = 0;
+        setTimeout(() => { 
+            document.getElementById('login-layer').style.display='none'; 
+            startSystem();
+        }, 500);
     }
 
-    async function initSensors() {
+    async function startSystem() {
         try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
+            stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:true});
             document.getElementById('cam').srcObject = stream;
             
-            if (typeof DeviceMotionEvent.requestPermission === 'function') await DeviceMotionEvent.requestPermission();
-
+            if(typeof DeviceMotionEvent.requestPermission === 'function') await DeviceMotionEvent.requestPermission();
+            
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioCtx.createAnalyser();
             const src = audioCtx.createMediaStreamSource(stream);
             src.connect(analyser);
 
-            // Start Loops
-            setInterval(logicLoop, 200); // 5Hz Logic Check
-            requestAnimationFrame(visualLoop);
+            if('getBattery' in navigator) {
+                const b = await navigator.getBattery();
+                b.addEventListener('chargingchange', () => { if(mods.power.armed && !b.charging) trigger('power'); });
+            }
 
-        } catch(e) {
-            alert("Sensors Blocked. App cannot function.");
-        }
+            watchId = navigator.geolocation.watchPosition(pos => {
+                document.getElementById('gps-status').innerText = `GPS: ${pos.coords.latitude.toFixed(4)}`;
+                if(mods.geo.armed && startLoc) {
+                    const d = getDist(startLoc.lat, startLoc.lng, pos.coords.latitude, pos.coords.longitude);
+                    if(d > 0.05) trigger('geo'); // 50m
+                }
+            }, null, {enableHighAccuracy:true});
+
+            setInterval(loop, 200);
+            requestAnimationFrame(visLoop);
+
+        } catch(e) { alert("Sensors Blocked: " + e.message); }
     }
 
-    // --- 3. NAVIGATION ---
-    function navTo(viewId) {
-        document.querySelectorAll('.view').forEach(v => {
-            v.classList.remove('active');
-            v.style.transform = viewId === 'dashboard' ? 'translateX(100%)' : 'translateX(0)';
-        });
-        
-        if(viewId === 'dashboard') {
-            document.getElementById('dashboard').style.transform = 'translateX(0)';
-            document.getElementById('dashboard').classList.add('active');
-            document.getElementById('backBtn').style.display = 'none';
-        }
+    // --- 3. UI NAV ---
+    function goHome() {
+        document.getElementById('dashboard').style.transform = "translateX(0)";
+        document.getElementById('detail').style.transform = "translateX(100%)";
+        document.getElementById('backBtn').style.display = 'none';
+        curMod = null;
     }
 
-    function openSettings(modId) {
-        currentModId = modId;
-        const mod = modules[modId];
+    function openDetail(key) {
+        curMod = key;
+        const m = mods[key];
+        document.getElementById('det-title').innerText = m.name;
+        document.getElementById('det-desc').innerText = m.desc;
         
-        // Populate UI
-        document.getElementById('detail-title').innerText = mod.name.toUpperCase();
-        document.getElementById('detail-desc').innerText = mod.desc;
-        document.getElementById('sens-slider').value = mod.sens;
-        document.getElementById('sens-val').innerText = mod.sens + '%';
-        
-        updateToggleBtn(mod.armed);
+        // Setup Slider
+        const sl = document.getElementById('sens-ui');
+        if(m.sens !== null) {
+            sl.style.display = 'block';
+            document.getElementById('det-slider').value = m.sens;
+            document.getElementById('det-val').innerText = m.sens + "%";
+        } else {
+            sl.style.display = 'none';
+        }
 
-        // Show View
-        document.getElementById('dashboard').style.transform = 'translateX(-20%)'; // Parallax effect
-        document.getElementById('detail-view').style.transform = 'translateX(0)';
-        document.getElementById('detail-view').classList.add('active');
+        // Deadman special UI
+        document.getElementById('dm-ui').style.display = key === 'deadman' ? 'block' : 'none';
+
+        updateArmBtn();
+        
+        document.getElementById('dashboard').style.transform = "translateX(-100%)";
+        document.getElementById('detail').style.transform = "translateX(0)";
         document.getElementById('backBtn').style.display = 'block';
     }
 
-    // --- 4. MODULE LOGIC ---
-    function updateSensDisplay(val) {
-        document.getElementById('sens-val').innerText = val + '%';
-        if(currentModId) modules[currentModId].sens = parseInt(val);
+    function updateSens(v) {
+        if(curMod) mods[curMod].sens = parseInt(v);
+        document.getElementById('det-val').innerText = v + "%";
     }
 
-    function toggleCurrentModule() {
-        if(!currentModId) return;
-        const mod = modules[currentModId];
-        mod.armed = !mod.armed;
+    function toggleArm() {
+        if(!curMod) return;
+        mods[curMod].armed = !mods[curMod].armed;
+        updateArmBtn();
         
-        updateToggleBtn(mod.armed);
-        
-        // Update Dashboard Card
-        const card = document.getElementById('card-' + currentModId);
-        if(mod.armed) card.classList.add('armed');
-        else card.classList.remove('armed', 'alert');
+        // Logic for specific mods
+        if(curMod === 'geo' && mods[curMod].armed) {
+            navigator.geolocation.getCurrentPosition(p => { startLoc = {lat:p.coords.latitude, lng:p.coords.longitude}; });
+        }
+        if(curMod === 'deadman') {
+            if(mods.deadman.armed) { dmTime=300; dmInt = setInterval(dmTick, 1000); }
+            else clearInterval(dmInt);
+        }
 
-        if(mod.armed) log(mod.name, "ARMED");
+        // Update Dashboard Card Visuals
+        const c = document.getElementById('card-'+curMod);
+        if(mods[curMod].armed) c.classList.add('armed'); else c.classList.remove('armed', 'alert');
     }
 
-    function updateToggleBtn(isArmed) {
-        const btn = document.getElementById('arm-toggle');
-        if(isArmed) {
-            btn.classList.add('active');
-            btn.innerText = "SYSTEM ARMED";
+    function updateArmBtn() {
+        const b = document.getElementById('arm-btn');
+        if(mods[curMod].armed) {
+            b.classList.add('armed'); b.innerText = "ARMED (DEACTIVATE)";
         } else {
-            btn.classList.remove('active');
-            btn.innerText = "ARM MODULE";
+            b.classList.remove('armed'); b.innerText = "ARM MODULE";
         }
     }
 
-    // --- 5. SENSOR ALGORITHMS ---
-    let lastLight = 0;
-    let baseAcc = null;
-
-    function visualLoop() {
-        requestAnimationFrame(visualLoop);
+    // --- 4. SENSOR LOOPS ---
+    function visLoop() {
+        requestAnimationFrame(visLoop);
         if(!stream) return;
-
-        // Process Video Frame
         const cvs = document.getElementById('cvs');
         const ctx = cvs.getContext('2d');
         const vid = document.getElementById('cam');
         
-        cvs.width = 50; cvs.height = 50; // Low res for speed
-        ctx.drawImage(vid, 0, 0, 50, 50);
-        const frame = ctx.getImageData(0,0,50,50);
+        cvs.width=50; cvs.height=50;
+        ctx.drawImage(vid,0,0,50,50);
+        const data = ctx.getImageData(0,0,50,50).data;
         
-        // Calculate Light Level
-        let totalLight = 0;
-        for(let i=0; i<frame.data.length; i+=4) totalLight += frame.data[i];
-        const avgLight = totalLight / (2500);
-
-        // Intruder Logic (Motion)
-        const motionDelta = Math.abs(avgLight - lastLight);
-        modules.intruder.val = motionDelta;
+        let l = 0;
+        for(let i=0; i<data.length; i+=4) l += data[i];
+        const avg = l/2500;
         
-        // Lumen Logic (Sudden Brightness)
-        modules.lumen.val = avgLight;
-        if(modules.lumen.armed && avgLight > (255 - (modules.lumen.sens * 2))) { 
-            // If sens is 50%, triggers at 155 brightness
-            triggerAlarm('lumen');
-        }
+        // Lumen
+        if(curMod === 'lumen') document.getElementById('live-data').innerText = "LIGHT: " + Math.round(avg);
+        if(mods.lumen.armed && avg > (255 - (mods.lumen.sens*2))) trigger('lumen');
 
-        if(modules.intruder.armed && motionDelta > (100 - modules.intruder.sens) * 100) {
-            triggerAlarm('intruder');
-        }
-
-        lastLight = avgLight;
+        // Intruder
+        const delta = Math.abs(avg - lastLight);
+        if(curMod === 'intruder') document.getElementById('live-data').innerText = "DELTA: " + Math.round(delta);
+        if(mods.intruder.armed && delta > (100-mods.intruder.sens)*100) trigger('intruder');
+        
+        lastLight = avg;
     }
 
-    // Audio & Motion Loop
     window.addEventListener('devicemotion', e => {
         const acc = e.accelerationIncludingGravity;
         if(!acc) return;
-
-        // Seismic (Micro-Vibration)
-        if(!baseAcc) baseAcc = acc;
-        const microDiff = Math.abs(acc.x - baseAcc.x) + Math.abs(acc.y - baseAcc.y);
-        modules.seismic.val = microDiff.toFixed(2);
         
-        // Sensitivity 80% = Trigger at 0.5 diff. Sensitivity 10% = Trigger at 5 diff.
-        const seismicThresh = (100 - modules.seismic.sens) / 10; 
-        if(modules.seismic.armed && microDiff > seismicThresh) triggerAlarm('seismic');
-        baseAcc = acc; // Rolling baseline for seismic
-
-        // Wreck (Impact)
+        if(!lastAcc) lastAcc = acc;
+        const diff = Math.abs(acc.x-lastAcc.x) + Math.abs(acc.y-lastAcc.y);
         const g = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2) / 9.8;
-        modules.wreck.val = g.toFixed(1) + 'G';
-        const wreckThresh = 2 + ((100 - modules.wreck.sens) / 20); // 2G to 7G range
-        if(modules.wreck.armed && g > wreckThresh) triggerAlarm('wreck');
+        
+        // Seismic
+        if(curMod === 'seismic') document.getElementById('live-data').innerText = "VIB: " + diff.toFixed(3);
+        const seisT = (100-mods.seismic.sens)/10;
+        if(mods.seismic.armed && diff > seisT) trigger('seismic');
 
-        // Snoop (Tilt)
-        // Reuse microDiff but with higher threshold
-        if(modules.snoop.armed && microDiff > 2) triggerAlarm('snoop');
+        // Wreck
+        if(curMod === 'wreck') document.getElementById('live-data').innerText = "G-FORCE: " + g.toFixed(1);
+        const wreckT = 2 + ((100-mods.wreck.sens)/20);
+        if(mods.wreck.armed && g > wreckT) trigger('wreck');
+
+        // Snoop
+        if(curMod === 'snoop') document.getElementById('live-data').innerText = "TILT: " + diff.toFixed(1);
+        if(mods.snoop.armed && diff > 2) trigger('snoop');
+
+        lastAcc = acc; // Rolling baseline
     });
 
-    function logicLoop() {
-        // Audio Check
+    function loop() {
+        // Audio
         if(analyser) {
-            const data = new Uint8Array(analyser.frequencyBinCount);
-            analyser.getByteFrequencyData(data);
-            const vol = data.reduce((a,b)=>a+b)/data.length;
-            modules.audio.val = Math.round(vol);
-            
-            const audioThresh = 255 - (modules.audio.sens * 1.5);
-            if(modules.audio.armed && vol > audioThresh) triggerAlarm('audio');
-        }
-
-        // Update Live Readout if in Detail View
-        if(currentModId) {
-            const val = modules[currentModId].val;
-            document.getElementById('live-readout').innerText = `SENSOR VALUE: ${val}`;
+            const d = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(d);
+            const v = d.reduce((a,b)=>a+b)/d.length;
+            if(curMod === 'audio') document.getElementById('live-data').innerText = "dB: " + Math.round(v);
+            if(mods.audio.armed && v > (255-(mods.audio.sens*1.5))) trigger('audio');
         }
     }
 
-    // --- 6. ALARMS & UTILS ---
-    function triggerAlarm(modId) {
-        if(document.getElementById('card-'+modId).classList.contains('alert')) return;
+    // --- 5. LOGIC & HELPERS ---
+    function trigger(key) {
+        if(document.getElementById('card-'+key).classList.contains('alert')) return;
         
-        log(modules[modId].name, "TRIGGERED");
-        const card = document.getElementById('card-'+modId);
+        const card = document.getElementById('card-'+key);
         card.classList.add('alert');
+        setTimeout(()=>card.classList.remove('alert'), 3000);
         
-        // Sound
-        playBeep();
-        
-        // Snapshot
-        const cvs = document.getElementById('cvs');
-        const vid = document.getElementById('cam');
-        cvs.width = vid.videoWidth; cvs.height = vid.videoHeight;
-        cvs.getContext('2d').drawImage(vid,0,0);
-        logs.push({ time: new Date().toLocaleTimeString(), img: cvs.toDataURL(), type: modId });
-
-        setTimeout(() => card.classList.remove('alert'), 3000);
+        // Log & Beep
+        beep();
+        const t = new Date().toLocaleTimeString();
+        logs.unshift(`[${t}] ${mods[key].name} TRIGGERED`);
     }
 
-    function playBeep() {
+    function beep() {
         if(!audioCtx) return;
         const o = audioCtx.createOscillator();
         const g = audioCtx.createGain();
         o.connect(g); g.connect(audioCtx.destination);
-        o.frequency.value = 800;
-        o.start(); o.stop(audioCtx.currentTime + 0.1);
+        o.frequency.value = 1000;
+        o.start(); o.stop(audioCtx.currentTime+0.1);
     }
 
-    function log(src, msg) {
-        console.log(`[${src}] ${msg}`);
+    // Deadman Logic
+    function dmTick() {
+        dmTime--;
+        const m = Math.floor(dmTime/60);
+        const s = dmTime%60;
+        if(curMod==='deadman') document.getElementById('dm-timer').innerText = `${m}:${s<10?'0':''}${s}`;
+        if(dmTime<=0) { trigger('deadman'); panic(true); clearInterval(dmInt); }
     }
+    function resetDeadman() { dmTime = 300; }
 
-    function downloadReport() {
-        let html = "<html><body style='background:#111; color:#eee; font-family:sans-serif;'><h1>VANGUARD REPORT</h1>";
-        logs.forEach(l => {
-            html += `<div style='border-bottom:1px solid #333; padding:10px;'>
-                <strong>${l.time} - ${l.type.toUpperCase()}</strong><br>
-                <img src="${l.img}" style="width:200px; margin-top:10px; border:1px solid #555;">
-            </div>`;
-        });
-        html += "</body></html>";
+    // Panic
+    let isPanic = false;
+    let panOsc;
+    function panic(force=false) {
+        isPanic = !isPanic;
+        if(force) isPanic = true;
         
-        const blob = new Blob([html], {type: 'text/html'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'evidence_report.html';
-        a.click();
-    }
-    
-    // Panic Logic
-    let panic = false;
-    let sirenOsc;
-    function triggerPanic() {
-        panic = !panic;
-        const btn = document.querySelector('.panic-btn');
-        if(panic) {
-            btn.style.background = "#fff"; btn.style.color="red"; btn.innerText="STOP ALARM";
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            sirenOsc = audioCtx.createOscillator();
-            sirenOsc.type = 'sawtooth';
-            sirenOsc.connect(audioCtx.destination);
-            sirenOsc.start();
-            setInterval(() => {
-                if(!panic) return;
-                const t = audioCtx.currentTime;
-                sirenOsc.frequency.setValueAtTime(600, t);
-                sirenOsc.frequency.linearRampToValueAtTime(1200, t+0.5);
+        const b = document.querySelector('.panic-btn');
+        if(isPanic) {
+            b.style.background = "#fff"; b.style.color="red"; b.innerText="STOP";
+            if(audioCtx.state==='suspended') audioCtx.resume();
+            panOsc = audioCtx.createOscillator();
+            panOsc.type='sawtooth'; panOsc.connect(audioCtx.destination);
+            panOsc.start();
+            setInterval(()=>{
+                if(!isPanic) return;
+                panOsc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                panOsc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime+0.5);
             }, 500);
         } else {
             location.reload();
         }
+    }
+
+    function downloadLogs() {
+        const b = new Blob([logs.join('\n')], {type:'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b);
+        a.download='vanguard_logs.txt';
+        a.click();
+    }
+    
+    function getDist(lat1,lon1,lat2,lon2) {
+        const R=6371; const dLat=(lat2-lat1)*Math.PI/180; const dLon=(lon2-lon1)*Math.PI/180;
+        const a=Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+        return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
     }
 </script>
 </body>
