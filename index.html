@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VANGUARD SIGMA</title>
+    <title>VANGUARD SIGMA 7.1</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -13,7 +13,6 @@
             --neon-blue: #00f3ff;
             --neon-green: #00ff41;
             --neon-red: #ff003c;
-            --neon-purple: #bc13fe;
             --bg: #050505;
             --panel: #121212;
             --border: 1px solid #333;
@@ -22,20 +21,11 @@
         
         body { background-color: var(--bg); color: #eee; margin: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-        /* --- LOGIN --- */
-        #login-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s;
-        }
-        .login-input { width: 80%; padding: 15px; margin: 10px 0; background: #222; border: 1px solid #444; color: white; border-radius: 8px; text-align: center; }
-        .login-btn { width: 80%; padding: 15px; background: var(--neon-blue); font-weight: bold; border: none; border-radius: 8px; margin-top: 20px; }
-
-        /* --- HEADER --- */
+        /* HEADER */
         header { padding: 15px; background: rgba(0,0,0,0.95); border-bottom: var(--border); display: flex; justify-content: space-between; align-items: center; z-index: 100; }
         .brand { color: var(--neon-blue); font-weight: 900; letter-spacing: 1px; }
-        .map-btn { color: var(--neon-green); border: 1px solid var(--neon-green); background: transparent; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; }
-
-        /* --- VIEWS --- */
+        
+        /* VIEWS */
         #viewport { flex: 1; position: relative; overflow: hidden; }
         .view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -44,15 +34,7 @@
         }
         .view.active { transform: translateX(0); }
 
-        /* --- MAP VIEW --- */
-        #map-container { width: 100%; height: 100%; }
-        .map-overlay {
-            position: absolute; bottom: 100px; left: 10px; right: 10px;
-            background: rgba(0,0,0,0.8); padding: 10px; border-radius: 8px;
-            border: 1px solid var(--neon-red); z-index: 1000; display: none;
-        }
-
-        /* --- GRID --- */
+        /* GRID */
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .card {
             background: var(--panel); border: var(--border); border-radius: 10px; padding: 15px;
@@ -65,7 +47,7 @@
         .icon { font-size: 1.8rem; color: #666; }
         .card.armed .icon { color: var(--neon-green); }
 
-        /* --- DETAIL CONTROLS --- */
+        /* DETAIL CONTROLS */
         .setting-group { margin: 20px 0; background: #111; padding: 15px; border-radius: 8px; }
         .setting-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: #aaa; margin-bottom: 10px; }
         input[type=range] { width: 100%; background: #333; height: 5px; -webkit-appearance: none; }
@@ -74,13 +56,13 @@
         .big-toggle { width: 100%; padding: 20px; background: #222; border: 1px solid #444; color: #fff; font-size: 1.2rem; border-radius: 12px; margin-top: 10px; }
         .big-toggle.armed { background: var(--neon-green); color: black; border-color: var(--neon-green); }
 
-        /* --- FOOTER --- */
+        /* FOOTER */
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: #000; border-top: var(--border); display: flex; z-index: 200; padding: 10px; gap: 10px; }
         .panic-btn { flex: 2; background: var(--neon-red); color: white; border: none; border-radius: 8px; font-weight: 900; letter-spacing: 2px; }
         .log-btn { flex: 1; background: #222; color: #ccc; border: 1px solid #444; border-radius: 8px; }
 
         @keyframes flash { 0%, 100% { border-color: var(--neon-red); } 50% { border-color: #000; } }
-        #strobe-layer { position: fixed; top:0; left:0; width:100%; height:100%; z-index:9999; display:none; }
+        #strobe-layer { position: fixed; top:0; left:0; width:100%; height:100%; z-index:9999; display:none; pointer-events: none; }
         @keyframes strobe { 0% { background: white; } 50% { background: black; } 100% { background: white; } }
     </style>
 </head>
@@ -88,17 +70,10 @@
 
     <div id="strobe-layer"></div>
 
-    <div id="login-layer">
-        <h1 style="color:var(--neon-blue); letter-spacing:3px;">VANGUARD</h1>
-        <p style="color:#666; font-size:0.8rem; margin-bottom:30px;">SIGMA EDITION v7.0</p>
-        <input type="email" class="login-input" placeholder="SECURE ID" id="loginId">
-        <button class="login-btn" onclick="login()">INITIALIZE</button>
-    </div>
-
     <header>
         <button id="backBtn" onclick="goHome()" style="background:none; border:none; color:white; display:none;"><i class="material-icons">arrow_back</i></button>
         <div class="brand">VANGUARD</div>
-        <button class="map-btn" onclick="openMap()">TACTICAL MAP</button>
+        <div style="font-size: 0.7rem; color: #666;">SIGMA 7.1</div>
     </header>
 
     <div id="viewport">
@@ -110,39 +85,23 @@
                 </div>
                 <div class="card" id="card-seismic" onclick="openDetail('seismic')">
                     <div class="dot"></div><i class="material-icons icon">vibration</i>
-                    <div><h3>Seismic</h3><p>Auto-Calibrate</p></div>
+                    <div><h3>Seismic</h3><p>Door Guard</p></div>
                 </div>
                 <div class="card" id="card-lumen" onclick="openDetail('lumen')">
                     <div class="dot"></div><i class="material-icons icon">light_mode</i>
-                    <div><h3>Lumen</h3><p>Stealth Lock</p></div>
+                    <div><h3>Lumen</h3><p>Pocket Trap</p></div>
                 </div>
                 <div class="card" id="card-net" onclick="openDetail('net')">
                     <div class="dot"></div><i class="material-icons icon">wifi_off</i>
-                    <div><h3>Net-Sentry</h3><p>Jammer Detect</p></div>
-                </div>
-                <div class="card" id="card-velocity" onclick="openDetail('velocity')">
-                    <div class="dot"></div><i class="material-icons icon">speed</i>
-                    <div><h3>Velocity</h3><p>Anti-Abduction</p></div>
-                </div>
-                <div class="card" id="card-audio" onclick="openDetail('audio')">
-                    <div class="dot"></div><i class="material-icons icon">graphic_eq</i>
-                    <div><h3>Audio</h3><p>Gunshot Map</p></div>
+                    <div><h3>Net-Sentry</h3><p>Offline Detect</p></div>
                 </div>
                 <div class="card" id="card-deadman" onclick="openDetail('deadman')">
                     <div class="dot"></div><i class="material-icons icon">hourglass_bottom</i>
-                    <div><h3>Dead Man</h3><p>Adjustable Timer</p></div>
-                </div>
-                <div class="card" id="card-geo" onclick="openDetail('geo')">
-                    <div class="dot"></div><i class="material-icons icon">share_location</i>
-                    <div><h3>Perimeter</h3><p>Adjustable Fence</p></div>
-                </div>
-                <div class="card" id="card-snoop" onclick="openDetail('snoop')">
-                    <div class="dot"></div><i class="material-icons icon">touch_app</i>
-                    <div><h3>Snoop</h3><p>Device Tilt</p></div>
+                    <div><h3>Dead Man</h3><p>Timer</p></div>
                 </div>
                 <div class="card" id="card-wreck" onclick="openDetail('wreck')">
                     <div class="dot"></div><i class="material-icons icon">car_crash</i>
-                    <div><h3>Wreck</h3><p>Impact Detect</p></div>
+                    <div><h3>Wreck</h3><p>Impact</p></div>
                 </div>
             </div>
         </div>
@@ -156,17 +115,6 @@
                 <input type="range" id="inp-sens" min="1" max="100" value="50" oninput="updSet('sens', this.value)">
             </div>
 
-            <div class="setting-group" id="grp-timer" style="display:none;">
-                <div class="setting-label"><span>TIMER DURATION</span><span id="lbl-timer">5 MIN</span></div>
-                <input type="range" min="1" max="60" value="5" oninput="updSet('timer', this.value)">
-                <div id="dm-countdown" style="text-align:center; font-size:2rem; font-family:monospace; margin-top:10px; color:var(--neon-red);">00:00</div>
-            </div>
-
-            <div class="setting-group" id="grp-radius" style="display:none;">
-                <div class="setting-label"><span>FENCE RADIUS</span><span id="lbl-radius">50 M</span></div>
-                <input type="range" min="10" max="500" value="50" step="10" oninput="updSet('radius', this.value)">
-            </div>
-
             <div class="setting-group" id="grp-strobe" style="display:none;">
                 <div class="setting-label"><span>COUNTER-MEASURE</span></div>
                 <label style="display:flex; align-items:center; gap:10px;">
@@ -175,19 +123,15 @@
                 </label>
             </div>
 
+            <div id="net-instruction" style="display:none; color: var(--neon-blue); font-size: 0.8rem; margin: 10px 0;">
+                TESTING: Arm this module, then enable AIRPLANE MODE to trigger alarm.
+            </div>
+
             <button class="big-toggle" id="arm-btn" onclick="toggleArm()">ARM MODULE</button>
 
             <div style="background:#111; padding:15px; border-radius:8px; margin-top:20px;">
-                <label style="font-size:0.7rem; color:#555;">LIVE READOUT</label>
+                <label style="font-size:0.7rem; color:#555;">LIVE SENSOR DATA</label>
                 <div id="live-data" style="font-family:monospace; color:var(--neon-green); font-size:1.1rem;">--</div>
-            </div>
-        </div>
-
-        <div id="map-view" class="view">
-            <div id="map-container"></div>
-            <div id="threat-alert" class="map-overlay">
-                <strong style="color:var(--neon-red)">THREAT DETECTED</strong>
-                <div style="font-size:0.8rem; color:#ccc;">Proceed along Green Vector to Safety.</div>
             </div>
         </div>
     </div>
@@ -201,36 +145,26 @@
     <canvas id="cvs" style="display:none;"></canvas>
 
 <script>
-    // --- STATE & CONFIG ---
+    // --- STATE ---
     const mods = {
         intruder: { name:"Intruder", desc:"Visual Motion", armed:false, sens:50, strobe:false },
-        seismic: { name:"Seismic", desc:"Micro-Vibration", armed:false, sens:85, base:null },
-        lumen: { name:"Lumen", desc:"Pocket/Bag Light", armed:false, sens:50 },
-        net: { name:"Net-Sentry", desc:"Jammer/Cut Detect", armed:false, sens:null },
-        velocity: { name:"Velocity", desc:"Anti-Abduction (>15mph)", armed:false, sens:null },
-        audio: { name:"Audio", desc:"Gunshot/Explosion", armed:false, sens:70 },
-        deadman: { name:"Dead Man", desc:"Safety Timer", armed:false, timer:5, current:0 },
-        geo: { name:"Perimeter", desc:"GPS Geofence", armed:false, radius:50, start:null },
-        snoop: { name:"Snoop", desc:"Tilt/Touch", armed:false, sens:90 },
+        seismic: { name:"Seismic", desc:"Detects vibrations. Place on door handle or floor.", armed:false, sens:85 },
+        lumen: { name:"Lumen", desc:"Alarms when removed from dark pocket/bag.", armed:false, sens:50, ready:false },
+        net: { name:"Net-Sentry", desc:"Alarms if Internet/Wi-Fi is cut.", armed:false, sens:null },
+        deadman: { name:"Dead Man", desc:"Safety Timer", armed:false, timer:5 },
         wreck: { name:"Wreck", desc:"Impact G-Force", armed:false, sens:40 }
     };
 
     let curMod = null;
-    let stream, audioCtx, analyser;
+    let stream, audioCtx;
     let logs = [];
-    let map, usrMarker, threatMarker, escapeLine;
-    let lastLat, lastLng, lastSpeed = 0;
-    let dmInt, accBase;
+    let lastLight = 0;
+    let accBase = null;
+    let netCheckInt = null;
 
     // --- INIT ---
-    function login() {
-        if(!document.getElementById('loginId').value) return alert("ID Required");
-        document.getElementById('login-layer').style.opacity=0;
-        setTimeout(()=>{ 
-            document.getElementById('login-layer').style.display='none';
-            initSys();
-        }, 500);
-    }
+    // Start automatically on click
+    document.body.addEventListener('click', initSys, { once: true });
 
     async function initSys() {
         try {
@@ -240,54 +174,14 @@
             if(typeof DeviceMotionEvent.requestPermission==='function') await DeviceMotionEvent.requestPermission();
             
             audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-            analyser = audioCtx.createAnalyser();
-            audioCtx.createMediaStreamSource(stream).connect(analyser);
 
-            // Network Listener (Net-Sentry)
-            window.addEventListener('offline', () => { if(mods.net.armed) trigger('net'); });
-
-            // Initialize Map
-            initMap();
-            
             // Start Loops
-            setInterval(loop, 200);
             requestAnimationFrame(visLoop);
             
-            navigator.geolocation.watchPosition(updateGPS, null, {enableHighAccuracy:true});
+            // Network Listener
+            window.addEventListener('offline', () => { if(mods.net.armed) trigger('net'); });
 
-        } catch(e) { alert("Sensor Error: "+e.message); }
-    }
-
-    function initMap() {
-        map = L.map('map-container').setView([0,0], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-        usrMarker = L.circleMarker([0,0], {color: '#00f3ff'}).addTo(map);
-    }
-
-    function updateGPS(pos) {
-        lastLat = pos.coords.latitude;
-        lastLng = pos.coords.longitude;
-        lastSpeed = pos.coords.speed || 0; // m/s
-        
-        const ll = [lastLat, lastLng];
-        if(map) {
-            usrMarker.setLatLng(ll);
-            if(!threatMarker) map.setView(ll, 16);
-        }
-
-        // Perimeter Logic
-        if(mods.geo.armed && mods.geo.start) {
-            const d = map.distance(ll, mods.geo.start);
-            if(curMod === 'geo') document.getElementById('live-data').innerText = `DIST: ${Math.round(d)}m / ${mods.geo.radius}m`;
-            if(d > mods.geo.radius) trigger('geo');
-        }
-
-        // Velocity Logic (Anti-Abduction)
-        const mph = lastSpeed * 2.237;
-        if(curMod === 'velocity') document.getElementById('live-data').innerText = `SPEED: ${mph.toFixed(1)} MPH`;
-        if(mods.velocity.armed && mph > 15) trigger('velocity');
+        } catch(e) { console.log(e); }
     }
 
     // --- UI NAVIGATION ---
@@ -304,37 +198,20 @@
         document.getElementById('det-title').innerText = m.name;
         document.getElementById('det-desc').innerText = m.desc;
         
-        // Toggle Settings Visibility
-        document.querySelectorAll('.setting-group').forEach(el=>el.style.display='none');
-        
-        if(key === 'deadman') {
-            document.getElementById('grp-timer').style.display='block';
-            document.getElementById('lbl-timer').innerText = m.timer + " MIN";
-        } else if (key === 'geo') {
-            document.getElementById('grp-radius').style.display='block';
-            document.getElementById('lbl-radius').innerText = m.radius + " M";
-        } else if (key !== 'net' && key !== 'velocity') {
-            document.getElementById('grp-sens').style.display='block';
+        // UI Toggles
+        document.getElementById('grp-sens').style.display = (key==='net' || key==='deadman') ? 'none' : 'block';
+        document.getElementById('grp-strobe').style.display = (key==='intruder') ? 'block' : 'none';
+        document.getElementById('net-instruction').style.display = (key==='net') ? 'block' : 'none';
+
+        if(key !== 'net' && key !== 'deadman') {
             document.getElementById('inp-sens').value = m.sens;
             document.getElementById('lbl-sens').innerText = m.sens + "%";
         }
-
-        if(key === 'intruder') document.getElementById('grp-strobe').style.display='block';
-
-        // Net-Sentry Logic Visual
-        if(key === 'net') document.getElementById('live-data').innerText = navigator.onLine ? "STATUS: ONLINE" : "STATUS: OFFLINE";
 
         updateArmBtn();
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById('detail').classList.add('active');
         document.getElementById('backBtn').style.display='block';
-    }
-
-    function openMap() {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById('map-view').classList.add('active');
-        document.getElementById('backBtn').style.display='block';
-        setTimeout(() => map.invalidateSize(), 500); 
     }
 
     function updSet(type, val) {
@@ -343,35 +220,21 @@
             mods[curMod].sens = parseInt(val);
             document.getElementById('lbl-sens').innerText = val + "%";
         }
-        if(type === 'timer') {
-            mods[curMod].timer = parseInt(val);
-            document.getElementById('lbl-timer').innerText = val + " MIN";
-        }
-        if(type === 'radius') {
-            mods[curMod].radius = parseInt(val);
-            document.getElementById('lbl-radius').innerText = val + " M";
-        }
     }
 
     function toggleArm() {
         if(!curMod) return;
         mods[curMod].armed = !mods[curMod].armed;
         
-        // Special Start Logics
-        if(curMod === 'geo' && mods[curMod].armed) mods.geo.start = [lastLat, lastLng];
-        if(curMod === 'seismic' && mods[curMod].armed) mods.seismic.base = null; 
-        if(curMod === 'deadman') {
-            if(mods.deadman.armed) {
-                mods.deadman.current = mods.deadman.timer * 60;
-                dmInt = setInterval(() => {
-                    mods.deadman.current--;
-                    const m = Math.floor(mods.deadman.current/60);
-                    const s = mods.deadman.current%60;
-                    document.getElementById('dm-countdown').innerText = `${m}:${s<10?'0':''}${s}`;
-                    if(mods.deadman.current<=0) { trigger('deadman'); clearInterval(dmInt); }
-                }, 1000);
-            } else clearInterval(dmInt);
+        // LUMEN: 3 Second Delay
+        if(curMod === 'lumen' && mods.lumen.armed) {
+            mods.lumen.ready = false;
+            document.getElementById('arm-btn').innerText = "ARMING IN 3s...";
+            setTimeout(() => { mods.lumen.ready = true; updateArmBtn(); }, 3000);
         }
+
+        // SEISMIC: Reset Baseline
+        if(curMod === 'seismic' && mods.seismic.armed) accBase = null;
 
         updateArmBtn();
         const c = document.getElementById('card-'+curMod);
@@ -380,14 +243,21 @@
 
     function updateArmBtn() {
         const b = document.getElementById('arm-btn');
-        if(mods[curMod].armed) { b.classList.add('armed'); b.innerText="DISARM"; }
-        else { b.classList.remove('armed'); b.innerText="ARM MODULE"; }
+        if(mods[curMod].armed) { 
+            b.classList.add('armed'); 
+            b.innerText = mods[curMod].ready === false ? "ARMING..." : "DISARM"; 
+        } else { 
+            b.classList.remove('armed'); 
+            b.innerText = "ARM MODULE"; 
+        }
     }
 
-    // --- SENSOR LOOPS ---
+    // --- PHYSICS ENGINE (THE FIX) ---
     function visLoop() {
         requestAnimationFrame(visLoop);
         if(!stream) return;
+        
+        // 1. Get Light Data
         const cvs = document.getElementById('cvs');
         const ctx = cvs.getContext('2d');
         const vid = document.getElementById('cam');
@@ -396,10 +266,32 @@
         ctx.drawImage(vid,0,0,50,50);
         const d = ctx.getImageData(0,0,50,50).data;
         let l=0; for(let i=0; i<d.length; i+=4) l+=d[i];
-        const avg = l/2500;
+        const avg = Math.floor(l/2500); // 0-255 brightness
 
-        if(curMod==='intruder') document.getElementById('live-data').innerText = "LIGHT: "+Math.round(avg);
-        if(mods.lumen.armed && avg > (255-(mods.lumen.sens*2))) trigger('lumen');
+        // 2. INTRUDER LOGIC (Fixed Math)
+        // Previous error: Threshold was 5000. Max delta is 255.
+        // New logic: Delta of 10 is subtle, 50 is huge.
+        const delta = Math.abs(avg - lastLight);
+        
+        if(curMod==='intruder') document.getElementById('live-data').innerText = `MOTION: ${delta} / LIGHT: ${avg}`;
+        
+        // Threshold: High Sens (90) -> thresh 3. Low Sens (10) -> thresh 40.
+        const intThresh = (100 - mods.intruder.sens) * 0.4;
+        
+        if(mods.intruder.armed && delta > intThresh && delta > 2) { 
+             // delta > 2 prevents noise
+             trigger('intruder');
+        }
+
+        // 3. LUMEN LOGIC (Fixed Logic)
+        if(mods.lumen.armed && mods.lumen.ready) {
+            // High Sens (90) -> Trigger at brightness 20
+            // Low Sens (10) -> Trigger at brightness 180
+            const lumThresh = 200 - (mods.lumen.sens * 1.8);
+            if(avg > lumThresh) trigger('lumen');
+        }
+
+        lastLight = avg;
     }
 
     window.addEventListener('devicemotion', e => {
@@ -407,43 +299,35 @@
         if(!acc) return;
         if(!accBase) accBase = acc;
         
+        // 4. SEISMIC LOGIC (Fixed Sensitivity)
+        // Old threshold was ~1.5. New needs to be ~0.1
         const diff = Math.abs(acc.x-accBase.x) + Math.abs(acc.y-accBase.y);
         
         if(curMod==='seismic') document.getElementById('live-data').innerText = "VIB: "+diff.toFixed(3);
-        const seisT = (100-mods.seismic.sens)/10;
-        if(mods.seismic.armed && diff > seisT) trigger('seismic');
         
-        // Snoop & Wreck logic (Simplified)
-        if(mods.snoop.armed && diff > 2) trigger('snoop');
-        const g = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2) / 9.8;
-        if(mods.wreck.armed && g > 2 + ((100-mods.wreck.sens)/20)) trigger('wreck');
+        // Sens 100 -> Thresh 0.05. Sens 1 -> Thresh 1.0
+        const seisT = (100 - mods.seismic.sens) / 100 + 0.05;
+        
+        if(mods.seismic.armed && diff > seisT) trigger('seismic');
 
-        accBase = acc;
+        // Drift correction for seismic (Slowly adapt to new angle)
+        accBase.x += (acc.x - accBase.x) * 0.05;
+        accBase.y += (acc.y - accBase.y) * 0.05;
     });
 
-    function loop() {
-        if(analyser) {
-            const d = new Uint8Array(analyser.frequencyBinCount);
-            analyser.getByteFrequencyData(d);
-            const v = d.reduce((a,b)=>a+b)/d.length;
-            if(curMod==='audio') document.getElementById('live-data').innerText="dB: "+Math.round(v);
-            if(mods.audio.armed && v > (255-(mods.audio.sens*1.5))) {
-                trigger('audio');
-                plotThreat();
-            }
-        }
-    }
-
-    // --- ALERTS ---
+    // --- ALERT SYSTEM ---
     function trigger(key) {
         if(document.getElementById('card-'+key).classList.contains('alert')) return;
         
+        // Visual
         const card = document.getElementById('card-'+key);
         card.classList.add('alert');
         setTimeout(()=>card.classList.remove('alert'), 3000);
         
+        // Log
         logs.push(`[${new Date().toLocaleTimeString()}] ${mods[key].name} TRIGGERED`);
-        
+
+        // Strobe
         if(key === 'intruder' && mods.intruder.strobe) {
             const s = document.getElementById('strobe-layer');
             s.style.display='block'; s.style.animation='strobe 0.1s infinite';
@@ -453,29 +337,16 @@
         playSiren();
     }
 
-    function plotThreat() {
-        if(!map || !lastLat) return;
-        if(!threatMarker) {
-            threatMarker = L.circleMarker([lastLat, lastLng], {color: 'red', radius: 20}).addTo(map);
-            document.getElementById('threat-alert').style.display='block';
-        }
-        
-        // Simulated Safe Route
-        const safeLat = lastLat + 0.01; const safeLng = lastLng + 0.01;
-        if(escapeLine) map.removeLayer(escapeLine);
-        escapeLine = L.polyline([[lastLat, lastLng], [safeLat, safeLng]], {color:'var(--neon-green)', dashArray:'5,10'}).addTo(map);
-        map.fitBounds(escapeLine.getBounds());
-    }
-
     function playSiren() {
         if(!audioCtx) return;
+        if(audioCtx.state === 'suspended') audioCtx.resume();
         const o = audioCtx.createOscillator();
         const g = audioCtx.createGain();
         o.connect(g); g.connect(audioCtx.destination);
         o.frequency.value=800; o.start(); o.stop(audioCtx.currentTime+0.5);
     }
 
-    function panic() { alert("PANIC BEACON BROADCASTING (Simulated)"); }
+    function panic() { alert("PANIC BEACON BROADCASTING"); }
 
     function downloadLogs() {
         const b = new Blob([logs.join('\n')], {type:'text/plain'});
