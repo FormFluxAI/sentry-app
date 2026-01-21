@@ -4,58 +4,112 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ECHO: ONE</title>
+    
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* BRANDING: BLACK & GOLD */
-        :root { --gold:#FFD700; --gold-dim:#998100; --alert:#FF003C; --bg:#050505; --panel:#111; --text:#eee; }
-        * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; font-family:'Helvetica Neue', sans-serif; }
-        body { background-color:var(--bg); color:var(--text); margin:0; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+        /* --- BRANDING: BLACK & GOLD --- */
+        :root {
+            --gold: #FFD700;
+            --gold-dim: #998100;
+            --alert: #FF003C;
+            --bg: #050505;
+            --panel: #111;
+            --text: #eee;
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        
+        body { 
+            background-color: var(--bg); 
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 80%);
+            color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+        }
 
-        /* AUTH SCREEN */
-        #auth-screen { position:fixed; top:0; left:0; width:100%; height:100%; z-index:9000; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity 0.5s; }
-        .auth-brand { font-size:3rem; font-weight:900; letter-spacing:4px; color:var(--gold); text-shadow:0 0 30px rgba(255, 215, 0, 0.2); }
-        .login-btn { width:80%; max-width:300px; padding:15px; border:1px solid #333; background:#111; color:#fff; font-weight:bold; border-radius:4px; margin-bottom:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; }
-        .login-btn:active { border-color:var(--gold); color:var(--gold); }
+        /* --- AUTH SCREEN --- */
+        #auth-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9000;
+            background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s;
+        }
+        .auth-brand { font-size: 3rem; font-weight: 900; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 30px rgba(255, 215, 0, 0.2); }
+        
+        .login-btn {
+            width: 80%; max-width: 300px; padding: 15px; border: 1px solid #333; background: #111;
+            color: #fff; font-weight: bold; border-radius: 4px; margin-bottom: 10px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s;
+        }
+        .login-btn:active { border-color: var(--gold); color: var(--gold); }
 
-        /* HEADER */
-        header { padding:15px 20px; background:rgba(5,5,5,0.95); border-bottom:1px solid #222; display:flex; justify-content:space-between; align-items:center; z-index:100; }
-        .app-logo { font-weight:800; letter-spacing:1px; color:var(--gold); font-size:1.1rem; }
-        .status-badge { font-size:0.65rem; color:#444; background:#111; padding:4px 8px; border-radius:4px; border:1px solid #222; font-weight:bold; }
-        .status-badge.active { color:#000; background:var(--gold); border-color:var(--gold); }
+        /* --- HEADER --- */
+        header { 
+            padding: 15px 20px; background: rgba(5,5,5,0.95); border-bottom: 1px solid #222; 
+            display: flex; justify-content: space-between; align-items: center; z-index: 100;
+        }
+        .app-logo { font-weight: 800; letter-spacing: 1px; color: var(--gold); font-size: 1.1rem; }
+        .status-badge { font-size: 0.65rem; color: #444; background: #111; padding: 4px 8px; border-radius: 4px; border: 1px solid #222; font-weight: bold; }
+        .status-badge.active { color: #000; background: var(--gold); border-color: var(--gold); }
 
-        /* CONTENT */
-        #content { flex:1; overflow-y:auto; padding-bottom:100px; }
-        .view { display:none; padding:15px; animation:fade 0.3s; }
-        .view.active { display:block; }
+        /* --- TABS --- */
+        .tabs { display: flex; border-bottom: 1px solid #222; background: #000; }
+        .tab { flex: 1; padding: 15px; text-align: center; color: #666; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
+        .tab.active { color: var(--gold); border-bottom: 2px solid var(--gold); }
 
-        /* MODULES */
-        .mod-card { background:#111; border:1px solid #222; border-radius:6px; padding:15px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; transition:0.2s; }
-        .mod-card.selected { border-color:var(--gold-dim); background:#161400; }
-        .mod-card.armed { border-color:#0f0; background:rgba(0,50,0,0.2); }
-        .mod-card.triggered { border-color:var(--alert); background:rgba(50,0,0,0.4); animation:flash 0.5s infinite; }
-        .mod-icon { font-size:1.8rem; color:#444; width:40px; }
-        .mod-text { flex:1; padding:0 15px; }
-        .mod-title { font-weight:bold; font-size:0.9rem; color:#eee; }
-        .mod-desc { font-size:0.7rem; color:#666; }
-        .meter { height:3px; background:#222; width:100%; margin-top:8px; position:relative; }
-        .meter-fill { height:100%; background:var(--gold); width:0%; transition:width 0.1s; }
-        .meter-line { position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--alert); z-index:2; }
+        /* --- CONTENT --- */
+        #content { flex: 1; overflow-y: auto; padding-bottom: 100px; }
+        .view { display: none; padding: 15px; animation: fade 0.3s; }
+        .view.active { display: block; }
 
-        /* FOOTER */
-        .dock { position:fixed; bottom:0; left:0; width:100%; background:rgba(0,0,0,0.95); border-top:1px solid #222; padding:15px; display:flex; gap:10px; z-index:500; }
-        .btn { flex:1; padding:15px; border-radius:4px; font-weight:800; border:none; cursor:pointer; font-size:0.9rem; text-transform:uppercase; }
-        .btn-arm { background:var(--gold); color:#000; }
-        .btn-disarm { background:transparent; border:1px solid #ff003c; color:#ff003c; display:none; }
-        .btn-panic { flex:0.3; background:var(--alert); color:#fff; }
+        /* --- MODULE LIST --- */
+        .mod-card {
+            background: #111; border: 1px solid #222; border-radius: 6px; padding: 15px;
+            margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
+            position: relative; overflow: hidden; transition: 0.2s;
+        }
+        .mod-card.selected { border-color: var(--gold-dim); background: #161400; }
+        .mod-card.armed { border-color: #0f0; background: rgba(0, 50, 0, 0.2); }
+        .mod-card.triggered { border-color: var(--alert); background: rgba(50, 0, 0, 0.4); animation: flash 0.5s infinite; }
 
-        /* EXTRAS */
-        #strobe { position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; display:none; pointer-events:none; background:#fff; }
-        video { position:fixed; top:-9999px; }
-        @keyframes flash { 0%,100%{background:rgba(50,0,0,0.5);} 50%{background:rgba(255,0,0,0.2);} }
-        @keyframes fade { from{opacity:0} to{opacity:1} }
+        .mod-icon { font-size: 1.8rem; color: #444; width: 40px; }
+        .mod-card.armed .mod-icon { color: #0f0; }
+        .mod-card.selected .mod-icon { color: var(--gold); }
+
+        .mod-text { flex: 1; padding: 0 15px; }
+        .mod-title { font-weight: bold; font-size: 0.9rem; color: #eee; }
+        .mod-desc { font-size: 0.7rem; color: #666; margin-top: 2px; }
+
+        /* Visualizers */
+        .meter { height: 3px; background: #222; width: 100%; margin-top: 8px; position: relative; }
+        .meter-fill { height: 100%; background: var(--gold); width: 0%; transition: width 0.1s; }
+        .meter-line { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--alert); z-index: 2; }
+
+        /* --- SETTINGS MODAL --- */
+        #settings-modal {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: #161616; 
+            border-top: 2px solid var(--gold); padding: 25px; z-index: 2000;
+            transform: translateY(100%); transition: 0.3s;
+        }
+        #settings-modal.open { transform: translateY(0); }
+        input[type=range] { width: 100%; margin: 20px 0; accent-color: var(--gold); background: #333; height: 4px; border-radius: 2px; -webkit-appearance: none; }
+
+        /* --- FOOTER --- */
+        .dock {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95);
+            border-top: 1px solid #222; padding: 15px; display: flex; gap: 10px; z-index: 500;
+            backdrop-filter: blur(10px);
+        }
+        .btn { flex: 1; padding: 15px; border-radius: 4px; font-weight: 800; border: none; cursor: pointer; font-size: 0.9rem; text-transform: uppercase; }
+        .btn-arm { background: var(--gold); color: #000; box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
+        .btn-disarm { background: transparent; border: 1px solid var(--alert); color: var(--alert); display: none; }
+        .btn-panic { flex: 0.3; background: var(--alert); color: #fff; font-weight: 900; }
+
+        /* --- UTILS --- */
+        #strobe { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: none; pointer-events: none; background: #fff; }
+        video { position: fixed; top: -9999px; }
+        @keyframes flash { 0%, 100% { background: rgba(50,0,0,0.5); } 50% { background: rgba(255,0,0,0.2); } }
+        @keyframes fade { from {opacity:0} to {opacity:1} }
     </style>
 </head>
 <body>
@@ -76,26 +130,37 @@
     </div>
 
     <header>
-        <div class="app-logo">ECHO:ONE</div>
+        <div class="app-logo"><i class="material-icons" style="font-size:1rem; vertical-align:middle;">security</i> ECHO:ONE</div>
         <div class="status-badge" id="sys-status">OFFLINE</div>
     </header>
 
-    <div style="display:flex; border-bottom:1px solid #222; background:#000;">
-        <div onclick="ui.tab('dash')" style="flex:1; padding:15px; text-align:center; color:var(--gold); border-bottom:2px solid var(--gold); font-size:0.8rem; font-weight:bold;">PROTOCOLS</div>
-        <div onclick="ui.tab('map')" style="flex:1; padding:15px; text-align:center; color:#666; font-size:0.8rem; font-weight:bold;">MAP</div>
-        <div onclick="ui.tab('logs')" style="flex:1; padding:15px; text-align:center; color:#666; font-size:0.8rem; font-weight:bold;">INTEL</div>
+    <div class="tabs">
+        <div class="tab active" onclick="ui.tab('dash')" id="tab-dash">PROTOCOLS</div>
+        <div class="tab" onclick="ui.tab('map')" id="tab-map">MAP</div>
+        <div class="tab" onclick="ui.tab('logs')" id="tab-logs">INTEL</div>
     </div>
 
     <div id="content">
         <div id="view-dash" class="view active">
             <div id="module-container"></div>
         </div>
+
         <div id="view-map" class="view">
             <div id="map-el" style="width:100%; height:60vh; background:#111; border-radius:4px;"></div>
         </div>
+
         <div id="view-logs" class="view">
+            <button style="width:100%; padding:12px; background:#222; border:1px solid #333; color:var(--gold); font-weight:bold; margin-bottom:15px;" onclick="logger.export()">EXPORT DATA</button>
             <div id="log-list" style="font-family:monospace; font-size:0.7rem; color:#aaa;"></div>
         </div>
+    </div>
+
+    <div id="settings-modal">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <h3 id="set-title" style="margin:0; color:var(--gold)">SETTINGS</h3>
+            <i class="material-icons" onclick="ui.closeSettings()" style="color:#666; cursor:pointer;">close</i>
+        </div>
+        <div id="set-body"></div>
     </div>
 
     <div class="dock">
@@ -108,15 +173,9 @@
     <canvas id="cvs" style="display:none;"></canvas>
 
     <script>
-        // --- 1. BYPASS LOGIN LOGIC ---
+        // --- 1. LOGIN LOGIC ---
         function appLogin(type) {
-            // Check if Firebase is actually loaded (it won't be yet, and that's okay)
-            if(type === 'google' && !window.firebase) {in
-                alert("CLOUD SYNC REQUIRED: Please add Firebase API Keys to enable Google Login. Using Guest Mode for now.");
-                type = 'guest';
-            }
-            
-            // Force Entry
+            // Instant Entry (Bypass)
             document.getElementById('auth-screen').style.opacity = 0;
             setTimeout(() => {
                 document.getElementById('auth-screen').style.display = 'none';
@@ -143,14 +202,16 @@
         const state = { mods: {}, vals: {}, base: {} };
         MODULES.forEach(m => { state.mods[m.id] = { selected: false, active: false, thresh: m.thresh }; state.vals[m.id] = 0; });
 
-        // --- 3. UI ---
+        // --- 3. UI CONTROLLER ---
         const ui = {
+            cur: null,
             render: () => {
                 const c = document.getElementById('module-container');
                 c.innerHTML = '';
                 MODULES.forEach(m => {
                     const st = state.mods[m.id];
                     const cls = st.active ? 'armed' : (st.selected ? 'selected' : '');
+                    
                     c.innerHTML += `
                     <div class="mod-card ${cls}" id="card-${m.id}" onclick="ui.toggle('${m.id}')">
                         <i class="material-icons mod-icon">${m.icon}</i>
@@ -159,7 +220,7 @@
                             <div class="mod-desc">${m.desc}</div>
                             <div class="meter"><div class="meter-line" style="left:${st.thresh}%"></div><div class="meter-fill" id="bar-${m.id}"></div></div>
                         </div>
-                        <i class="material-icons" style="color:${st.selected? 'var(--gold)' : '#333'}">check_circle</i>
+                        <i class="material-icons" style="color:#666; cursor:pointer; padding:10px;" onclick="ui.settings('${m.id}', event)">settings</i>
                     </div>`;
                 });
             },
@@ -169,13 +230,31 @@
             },
             tab: (id) => {
                 document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 document.getElementById(`view-${id}`).classList.add('active');
                 if(id==='map') setTimeout(()=>mapSys.map.invalidateSize(), 200);
             },
             updateMeters: () => MODULES.forEach(m => {
                 const el = document.getElementById(`bar-${m.id}`);
                 if(el) el.style.width = state.vals[m.id] + "%";
-            })
+            }),
+            settings: (id, e) => {
+                e.stopPropagation();
+                ui.cur = id;
+                const m = MODULES.find(x => x.id === id);
+                const st = state.mods[id];
+                document.getElementById('set-title').innerText = m.name;
+                document.getElementById('set-body').innerHTML = `
+                    <label style="color:#aaa; font-size:0.8rem">THRESHOLD: <span id="lbl-val">${st.thresh}</span></label>
+                    <input type="range" min="1" max="100" value="${st.thresh}" oninput="ui.save(this.value)">`;
+                document.getElementById('settings-modal').classList.add('open');
+            },
+            save: (val) => {
+                state.mods[ui.cur].thresh = parseInt(val);
+                document.getElementById('lbl-val').innerText = val;
+                ui.render();
+            },
+            closeSettings: () => document.getElementById('settings-modal').classList.remove('open')
         };
 
         // --- 4. HARDWARE ---
@@ -184,15 +263,19 @@
             init: async () => {
                 ui.render();
                 try {
+                    // Audio
                     sys.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    // Camera
                     try {
                         sys.stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:true});
                     } catch(e) {
                         sys.stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
                     }
                     document.getElementById('cam').srcObject = sys.stream;
+                    // Analyser
                     sys.analyser = sys.ctx.createAnalyser();
-                    sys.ctx.createMediaStreamSource(sys.stream).connect(sys.analyser);
+                    const src = sys.ctx.createMediaStreamSource(sys.stream);
+                    src.connect(sys.analyser);
                     
                     if(typeof DeviceMotionEvent.requestPermission==='function') await DeviceMotionEvent.requestPermission();
                     
@@ -200,6 +283,7 @@
                     requestAnimationFrame(sys.visLoop);
                     window.addEventListener('devicemotion', sys.motLoop);
                     navigator.geolocation.watchPosition(mapSys.update, null, {enableHighAccuracy:true});
+                    window.addEventListener('offline', () => { if(state.mods.net.active) alarm.trigger('net'); });
                     
                 } catch(e) { console.error(e); alert("Sensors Blocked. Use HTTPS."); }
             },
@@ -230,6 +314,14 @@
                 document.getElementById('sys-status').classList.remove('active');
                 document.getElementById('strobe').style.display='none';
                 ui.render();
+            },
+            startTimer: (mins) => {
+                let sec = mins * 60;
+                const int = setInterval(() => {
+                    if(!state.mods.deadman.active) clearInterval(int);
+                    sec--;
+                    if(sec <= 0) { alarm.trigger('deadman'); clearInterval(int); }
+                }, 1000);
             },
             visLoop: () => {
                 requestAnimationFrame(sys.visLoop);
@@ -281,7 +373,7 @@
             }
         };
 
-        // --- MAP ---
+        // --- 5. MAP ---
         const mapSys = {
             init: () => {
                 try {
@@ -310,7 +402,7 @@
             }
         };
 
-        // --- ALARM ---
+        // --- 6. ALARM ---
         const alarm = {
             trigger: (id) => {
                 const c = document.getElementById(`card-${id}`);
@@ -336,7 +428,7 @@
         const logger = {
             add: (mod, msg) => {
                 const t = new Date().toLocaleTimeString();
-                document.getElementById('log-list').innerHTML = `<div>[${t}] ${mod}: ${msg}</div>` + document.getElementById('log-list').innerHTML;
+                document.getElementById('log-list').innerHTML = `<div style="padding:5px; border-bottom:1px solid #222;">[${t}] ${mod}: ${msg}</div>` + document.getElementById('log-list').innerHTML;
             },
             export: () => { alert("Exporting to FormFlux Cloud..."); }
         };
