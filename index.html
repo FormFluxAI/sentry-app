@@ -2,250 +2,279 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENTRY 3.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel Safety App</title>
     <style>
-        :root { --bg: #000; --safe: #00ff41; --danger: #ff0000; --warn: #ffaa00; }
-        body { background-color: var(--bg); color: #fff; font-family: monospace; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; user-select: none; -webkit-user-select: none; }
+        :root { --primary: #ff4444; --dark: #1a1a1a; --light: #f4f4f4; }
+        body { font-family: sans-serif; background: var(--dark); color: var(--light); text-align: center; margin: 0; padding: 20px; }
         
-        /* ALARM STROBE */
-        @keyframes strobe { 0% { background: #fff; } 50% { background: var(--danger); } 100% { background: #fff; } }
-        body.alarm-active { animation: strobe 0.1s infinite; }
-        body.alarm-active * { display: none !important; }
-        body.alarm-active::after { content: 'BREACH DETECTED'; color: #000; font-size: 3rem; font-weight: 900; position: absolute; top: 40%; left: 0; width: 100%; text-align: center; }
-
-        h1 { margin: 0; font-size: 2.5rem; letter-spacing: 5px; color: var(--safe); margin-bottom: 5px; }
-        .version { color: #666; font-size: 0.8rem; margin-bottom: 20px; border: 1px solid #333; padding: 5px 10px; border-radius: 20px; }
+        /* Dashboard Grid */
+        .container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
         
-        /* HUD GRID */
-        .hud-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 350px; margin-bottom: 30px; }
-        .sensor-box { border: 1px solid #333; padding: 15px; text-align: center; border-radius: 8px; background: #111; transition: 0.2s; }
-        .sensor-box.active { border-color: var(--safe); background: #003300; box-shadow: 0 0 15px rgba(0, 255, 65, 0.2); }
-        .sensor-label { font-size: 0.7rem; color: #888; display: block; margin-bottom: 5px; }
-        .sensor-val { font-size: 1.2rem; font-weight: bold; color: #fff; }
+        /* Video Window */
+        .cam-wrapper { position: relative; border: 2px solid #333; border-radius: 12px; overflow: hidden; background: #000; height: 300px; display: flex; align-items: center; justify-content: center; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .status-badge { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; display: none; }
+        .recording-dot { width: 10px; height: 10px; background: red; border-radius: 50%; display: inline-block; animation: pulse 1s infinite; margin-right: 5px; }
 
-        /* ARM BUTTON */
-        .arm-btn {
-            width: 200px; height: 200px; border-radius: 50%;
-            border: 4px solid var(--safe); background: rgba(0, 255, 65, 0.1);
-            color: var(--safe); font-size: 1.5rem; font-weight: 900; letter-spacing: 3px;
-            cursor: pointer; transition: 0.3s;
-            display: flex; align-items: center; justify-content: center; text-align: center;
-            box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
-            margin-bottom: 30px;
-        }
-        .arm-btn:active { transform: scale(0.95); }
-        .arm-btn.armed { border-color: var(--danger); color: var(--danger); background: rgba(255, 0, 0, 0.1); animation: pulse-red 2s infinite; }
-        .arm-btn.counting { border-color: var(--warn); color: var(--warn); background: rgba(255,170,0,0.1); }
-        @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        /* Controls */
+        .btn { border: none; padding: 15px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn-arm { background: #2196F3; color: white; }
+        .btn-arm.armed { background: #4CAF50; }
+        .btn-panic { background: var(--primary); color: white; height: 80px; font-size: 1.5rem; text-transform: uppercase; box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4); }
+        .btn-panic:active { transform: scale(0.98); }
+        
+        /* Settings Area */
+        .settings-panel { background: #333; padding: 15px; border-radius: 8px; text-align: left; }
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        
+        /* Panic Mode Animation */
+        .panic-mode { animation: flashRed 0.5s infinite; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes flashRed { 0%, 100% { background: var(--dark); } 50% { background: #500000; } }
 
-        /* DEBUG CONSOLE (To see errors) */
-        .console-log { width: 100%; max-width: 350px; height: 100px; overflow-y: scroll; background: #111; border: 1px solid #333; font-size: 0.7rem; padding: 10px; box-sizing: border-box; color: #aaa; text-align: left; margin-top: 20px; }
-        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #222; }
-
-        #stop-hint { display:none; position:fixed; bottom:50px; width:100%; text-align:center; color:#000; font-weight:bold; z-index:999; }
+        /* Hidden canvas for processing */
+        #motionCanvas { display: none; }
     </style>
 </head>
-<body>
+<body id="mainBody">
 
-    <h1>SENTRY</h1>
-    <div class="version">v3.0 - FUSION CORE</div>
+<div class="container">
+    <h2>🛡️ Sentinel Safety</h2>
 
-    <div class="hud-grid">
-        <div class="sensor-box" id="box-motion">
-            <span class="sensor-label">VIBRATION</span>
-            <span class="sensor-val" id="val-motion">0.0</span>
+    <div class="cam-wrapper">
+        <video id="webcam" autoplay playsinline muted></video>
+        <div id="statusBadge" class="status-badge"><span class="recording-dot"></span> RECORDING</div>
+        <p id="camPlaceholder">Camera Off</p>
+    </div>
+
+    <button id="permBtn" class="btn" style="background: #555; color: white;">1. Grant Permissions</button>
+    <button id="armBtn" class="btn btn-arm" disabled>2. Arm Motion Detector</button>
+    
+    <button id="panicBtn" class="btn btn-panic">🆘 PANIC BUTTON</button>
+
+    <div class="settings-panel">
+        <div class="toggle-row">
+            <span>Sound Alarm on Motion?</span>
+            <input type="checkbox" id="alarmToggle" checked>
         </div>
-        <div class="sensor-box" id="box-audio">
-            <span class="sensor-label">AUDIO LEVEL</span>
-            <span class="sensor-val" id="val-audio">OFF</span>
+        <div class="toggle-row">
+            <span>Record Video on Motion?</span>
+            <input type="checkbox" id="recordToggle" checked>
         </div>
+        <div id="locationDisplay" style="font-size: 0.8rem; color: #aaa; margin-top: 10px;">Location: Unknown</div>
     </div>
+</div>
 
-    <div class="arm-btn" id="main-btn" onclick="handleButton()">
-        ARM<br>SYSTEM
-    </div>
+<canvas id="motionCanvas"></canvas>
 
-    <div class="console-log" id="console">
-        <div class="log-entry">> SYSTEM BOOT v3.0...</div>
-        <div class="log-entry">> WAITING FOR USER INPUT...</div>
-    </div>
+<script>
+    // --- VARIABLES ---
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('motionCanvas');
+    const ctx = canvas.getContext('2d');
+    const armBtn = document.getElementById('armBtn');
+    const permBtn = document.getElementById('permBtn');
+    const statusBadge = document.getElementById('statusBadge');
+    const camPlaceholder = document.getElementById('camPlaceholder');
+    const locationDisplay = document.getElementById('locationDisplay');
+    
+    let isArmed = false;
+    let stream = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let motionInterval = null;
+    let previousFrame = null;
+    let isRecording = false;
 
-    <div id="stop-hint">TAP SCREEN TO DISARM</div>
+    // Siren Audio Context
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    <script>
-        // --- CONFIG ---
-        let state = 'IDLE'; 
-        let lastX=null, lastY=null, lastZ=null;
-        let micStream, analyser, dataArray, audioCtx;
-
-        function log(msg) {
-            const consoleBox = document.getElementById('console');
-            consoleBox.innerHTML += `<div class="log-entry">> ${msg}</div>`;
-            consoleBox.scrollTop = consoleBox.scrollHeight;
-        }
-
-        // --- CORE CONTROL ---
-        function handleButton() {
-            if(state === 'IDLE') initSensors();
-            else if(state === 'ARMED' || state === 'COUNTDOWN') disarm();
-        }
-
-        async function initSensors() {
-            log("INITIALIZING SENSORS...");
+    // --- 1. PERMISSIONS & SETUP ---
+    permBtn.addEventListener('click', async () => {
+        try {
+            // Request Camera & Mic
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            video.srcObject = stream;
+            camPlaceholder.style.display = 'none';
             
-            // 1. REQUEST MICROPHONE
-            try {
-                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                log("MICROPHONE ACCESS: GRANTED");
-                setupAudioMonitor();
-            } catch(e) {
-                log("MICROPHONE ERROR: " + e.message);
-                log("Make sure you click ALLOW on popup");
-                alert("Microphone blocked! Check site settings.");
-            }
-
-            // 2. REQUEST MOTION (iOS only needs this, Android is auto)
-            if (typeof DeviceMotionEvent.requestPermission === 'function') {
-                DeviceMotionEvent.requestPermission()
-                    .then(resp => { 
-                        log("MOTION PERMISSION: " + resp);
-                        if (resp === 'granted') startCountdown(); 
-                    })
-                    .catch(e => log("MOTION ERROR: " + e));
-            } else {
-                startCountdown();
-            }
-        }
-
-        function startCountdown() {
-            state = 'COUNTDOWN';
-            const btn = document.getElementById('main-btn');
-            btn.classList.add('counting');
-            let count = 5;
+            // Enable Arm Button
+            permBtn.style.display = 'none';
+            armBtn.disabled = false;
+            armBtn.innerText = "Arm Motion Detector";
             
-            const timer = setInterval(() => {
-                count--;
-                btn.innerHTML = count;
-                if(count <= 0) {
-                    clearInterval(timer);
-                    armSystem();
+            // Get Location
+            if(navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    locationDisplay.innerText = `Location: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+                });
+            }
+            
+            setupRecorder();
+        } catch (err) {
+            alert("Error: Could not access camera/mic. Please allow permissions in browser settings.");
+            console.error(err);
+        }
+    });
+
+    function setupRecorder() {
+        if (!stream) return;
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            recordedChunks = [];
+            const url = URL.createObjectURL(blob);
+            // Auto-download the video (or upload in a real app)
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `security_footage_${new Date().toISOString()}.webm`;
+            a.click();
+        };
+    }
+
+    // --- 2. MOTION DETECTION LOGIC ---
+    armBtn.addEventListener('click', () => {
+        isArmed = !isArmed;
+        if (isArmed) {
+            armBtn.classList.add('armed');
+            armBtn.innerText = "SYSTEM ARMED (Detecting...)";
+            startMotionDetection();
+        } else {
+            armBtn.classList.remove('armed');
+            armBtn.innerText = "Arm Motion Detector";
+            stopMotionDetection();
+            stopRecording();
+        }
+    });
+
+    function startMotionDetection() {
+        canvas.width = 100; // Low res for performance
+        canvas.height = 100;
+        
+        motionInterval = setInterval(() => {
+            if (!isArmed) return;
+            
+            ctx.drawImage(video, 0, 0, 100, 100);
+            const currentFrame = ctx.getImageData(0, 0, 100, 100);
+            
+            if (previousFrame) {
+                const diff = calculatePixelDiff(previousFrame, currentFrame);
+                if (diff > 2000) { // Threshold for motion
+                    triggerSecurityEvent();
                 }
-            }, 1000);
-        }
-
-        function armSystem() {
-            state = 'ARMED';
-            const btn = document.getElementById('main-btn');
-            btn.classList.remove('counting');
-            btn.classList.add('armed');
-            btn.innerHTML = "SYSTEM<br>ARMED";
-            log("SYSTEM ARMED - MONITORING...");
-            
-            lastX = null;
-            window.addEventListener('devicemotion', handleMotion);
-            if(micStream) analyzeAudioLoop();
-        }
-
-        // --- MOTION LOGIC ---
-        function handleMotion(event) {
-            if(state !== 'ARMED') return;
-            const acc = event.accelerationIncludingGravity;
-            if(!acc) return;
-
-            const x = acc.x; const y = acc.y; const z = acc.z;
-            if(lastX === null) { lastX=x; lastY=y; lastZ=z; return; }
-
-            const delta = Math.abs(x-lastX) + Math.abs(y-lastY) + Math.abs(z-lastZ);
-            
-            document.getElementById('val-motion').innerText = delta.toFixed(1);
-            if(delta > 0.5) document.getElementById('box-motion').classList.add('active');
-            else document.getElementById('box-motion').classList.remove('active');
-
-            if(delta > 8.0) { // Threshold for motion
-                log("TRIGGER: MOTION SPIKE (" + delta.toFixed(1) + ")");
-                triggerAlarm();
             }
+            previousFrame = currentFrame;
+        }, 500); // Check every 500ms
+    }
 
-            lastX=x; lastY=y; lastZ=z;
+    function stopMotionDetection() {
+        clearInterval(motionInterval);
+        previousFrame = null;
+    }
+
+    function calculatePixelDiff(img1, img2) {
+        let diff = 0;
+        for (let i = 0; i < img1.data.length; i += 4) {
+            diff += Math.abs(img1.data[i] - img2.data[i]); // Check R channel changes
         }
+        return diff;
+    }
 
-        // --- AUDIO LOGIC ---
-        function setupAudioMonitor() {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            audioCtx = new AudioContext(); // Re-use for siren
-            analyser = audioCtx.createAnalyser();
-            const src = audioCtx.createMediaStreamSource(micStream);
-            src.connect(analyser);
-            analyser.fftSize = 256;
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
+    // --- 3. SECURITY EVENT (ALARM/RECORD) ---
+    function triggerSecurityEvent() {
+        if (document.getElementById('recordToggle').checked && !isRecording) {
+            startRecording();
         }
-
-        function analyzeAudioLoop() {
-            if(state !== 'ARMED') return;
-            requestAnimationFrame(analyzeAudioLoop);
-            analyser.getByteFrequencyData(dataArray);
-
-            let sum = 0;
-            for(let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-            const avg = Math.floor(sum / dataArray.length);
-
-            document.getElementById('val-audio').innerText = avg;
-            if(avg > 10) document.getElementById('box-audio').classList.add('active');
-            else document.getElementById('box-audio').classList.remove('active');
-
-            if(avg > 40) { // Threshold for sound
-                log("TRIGGER: AUDIO SPIKE (" + avg + ")");
-                triggerAlarm();
-            }
+        if (document.getElementById('alarmToggle').checked) {
+            playBeep(); // Short beep for motion
         }
+    }
 
-        // --- ALARM ---
-        function triggerAlarm() {
-            if(state === 'ALARM') return;
-            state = 'ALARM';
-            
-            // Stop Listeners
-            window.removeEventListener('devicemotion', handleMotion);
-            
-            // UI
-            document.body.classList.add('alarm-active');
-            document.getElementById('stop-hint').style.display = 'block';
-            
-            // Siren
+    function startRecording() {
+        isRecording = true;
+        statusBadge.style.display = 'block';
+        mediaRecorder.start();
+        
+        // Record for 10 seconds then stop
+        setTimeout(() => {
+            stopRecording();
+        }, 10000);
+    }
+
+    function stopRecording() {
+        if (isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+            statusBadge.style.display = 'none';
+        }
+    }
+
+    // --- 4. PANIC BUTTON ---
+    const panicBtn = document.getElementById('panicBtn');
+    let panicInterval;
+    let isPanic = false;
+
+    panicBtn.addEventListener('click', () => {
+        isPanic = !isPanic;
+        if (isPanic) {
+            document.body.classList.add('panic-mode');
+            panicBtn.innerText = "STOP ALARM";
             playSiren();
-            
-            document.body.onclick = disarm;
+        } else {
+            document.body.classList.remove('panic-mode');
+            panicBtn.innerText = "🆘 PANIC BUTTON";
+            stopSiren();
         }
+    });
 
-        function playSiren() {
-            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(900, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.1);
-            gain.gain.value = 1.0;
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.5);
-            setTimeout(() => { if(state === 'ALARM') playSiren(); }, 500);
-        }
+    // --- AUDIO UTILS (Siren/Beep) ---
+    let oscillator = null;
+    
+    function playSiren() {
+        // Create a wailing siren sound
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
+        oscillator.frequency.linearRampToValueAtTime(1000, audioCtx.currentTime + 0.5); // Ramp up
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        
+        // Loop the frequency ramp
+        panicInterval = setInterval(() => {
+            const now = audioCtx.currentTime;
+            oscillator.frequency.setValueAtTime(500, now);
+            oscillator.frequency.linearRampToValueAtTime(1000, now + 0.5);
+        }, 500);
+    }
 
-        function disarm() {
-            state = 'IDLE';
-            window.removeEventListener('devicemotion', handleMotion);
-            document.body.classList.remove('alarm-active');
-            document.getElementById('stop-hint').style.display = 'none';
-            document.body.onclick = null;
-            
-            const btn = document.getElementById('main-btn');
-            btn.classList.remove('armed'); 
-            btn.classList.remove('counting');
-            btn.innerHTML = "ARM<br>SYSTEM";
-            log("SYSTEM DISARMED");
+    function stopSiren() {
+        if (oscillator) {
+            oscillator.stop();
+            oscillator = null;
         }
-    </script>
+        clearInterval(panicInterval);
+    }
+
+    function playBeep() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = 800;
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
+</script>
+
 </body>
 </html>
