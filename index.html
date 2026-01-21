@@ -3,131 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SENTRY | DOOR SECURITY</title>
+    <title>SENTRY 2.0 | MULTI-SENSOR</title>
     <style>
-        :root { --bg: #000; --safe: #00ff41; --danger: #ff0000; --panel: #111; }
-        body { background-color: var(--bg); color: #fff; font-family: -apple-system, monospace; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; height: 100vh; justify-content: center; overflow: hidden; user-select: none; -webkit-user-select: none; }
+        :root { --bg: #000; --safe: #00ff41; --danger: #ff0000; --warn: #ffaa00; }
+        body { background-color: var(--bg); color: #fff; font-family: monospace; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; height: 100vh; justify-content: center; overflow: hidden; user-select: none; -webkit-user-select: none; }
         
-        /* THE STROBE EFFECT (Visual Alarm) */
+        /* ALARM STROBE */
         @keyframes strobe { 0% { background: #fff; } 50% { background: var(--danger); } 100% { background: #fff; } }
         body.alarm-active { animation: strobe 0.1s infinite; }
-        body.alarm-active * { display: none !important; } /* Hide UI during alarm */
-        body.alarm-active::after { content: 'INTRUDER DETECTED'; color: #000; font-size: 3rem; font-weight: 900; position: absolute; top: 40%; left: 0; width: 100%; text-align: center; }
+        body.alarm-active * { display: none !important; }
+        body.alarm-active::after { content: 'BREACH DETECTED'; color: #000; font-size: 3rem; font-weight: 900; position: absolute; top: 40%; left: 0; width: 100%; text-align: center; }
 
-        h1 { margin: 0; font-size: 2.5rem; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 10px; }
-        .status { font-size: 1rem; color: #666; letter-spacing: 2px; margin-bottom: 40px; }
+        h1 { margin: 0; font-size: 2.5rem; letter-spacing: 5px; color: var(--safe); margin-bottom: 5px; }
+        .subtitle { color: #666; font-size: 0.8rem; margin-bottom: 30px; }
         
+        /* HUD GRID */
+        .hud-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 350px; margin-bottom: 30px; }
+        .sensor-box { border: 1px solid #333; padding: 10px; text-align: center; border-radius: 8px; background: #111; }
+        .sensor-box.active { border-color: var(--safe); color: var(--safe); }
+        .sensor-label { font-size: 0.7rem; color: #888; display: block; margin-bottom: 5px; }
+        .sensor-val { font-size: 1.2rem; font-weight: bold; }
+
         /* ARM BUTTON */
         .arm-btn {
-            width: 250px; height: 250px; border-radius: 50%;
+            width: 220px; height: 220px; border-radius: 50%;
             border: 4px solid var(--safe); background: rgba(0, 255, 65, 0.1);
             color: var(--safe); font-size: 1.5rem; font-weight: 900; letter-spacing: 3px;
             cursor: pointer; transition: 0.3s;
-            box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
             display: flex; align-items: center; justify-content: center; text-align: center;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
         }
         .arm-btn:active { transform: scale(0.95); }
         
-        /* ARMED STATE (Red Pulse) */
         .arm-btn.armed {
             border-color: var(--danger); color: var(--danger);
             background: rgba(255, 0, 0, 0.1);
             box-shadow: 0 0 50px rgba(255, 0, 0, 0.4);
             animation: pulse-red 2s infinite;
         }
+        .arm-btn.counting { border-color: var(--warn); color: var(--warn); background: rgba(255,170,0,0.1); }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* COUNTDOWN STATE */
-        .arm-btn.counting { border-color: #ffaa00; color: #ffaa00; background: rgba(255,170,0,0.1); }
+        /* SETTINGS */
+        .controls { width: 100%; max-width: 300px; margin-top: 20px; }
+        .slider-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; color: #888; }
+        input[type=range] { width: 100%; accent-color: var(--safe); margin-bottom: 20px; }
 
-        /* SLIDER */
-        .controls { margin-top: 50px; width: 100%; max-width: 300px; text-align: center; }
-        label { color: #888; font-size: 0.8rem; letter-spacing: 1px; display: block; margin-bottom: 10px; }
-        input[type=range] { width: 100%; accent-color: var(--safe); }
-
-        .log { position: fixed; bottom: 10px; font-size: 0.7rem; color: #444; font-family: monospace; }
         #stop-hint { display:none; position:fixed; bottom:50px; width:100%; text-align:center; color:#000; font-weight:bold; z-index:999; }
-    </style>
+    </script>
+</style>
 </head>
 <body>
 
-    <h1 id="header">SENTRY</h1>
-    <div class="status" id="status-text">SYSTEM DISARMED</div>
+    <h1>SENTRY</h1>
+    <div class="subtitle">MULTI-SENSOR FUSION v2.0</div>
+
+    <div class="hud-grid">
+        <div class="sensor-box" id="box-motion">
+            <span class="sensor-label">VIBRATION</span>
+            <span class="sensor-val" id="val-motion">0.0</span>
+        </div>
+        <div class="sensor-box" id="box-audio">
+            <span class="sensor-label">AUDIO (dB)</span>
+            <span class="sensor-val" id="val-audio">--</span>
+        </div>
+    </div>
 
     <div class="arm-btn" id="main-btn" onclick="handleButton()">
         ARM<br>SYSTEM
     </div>
 
     <div class="controls">
-        <label>SENSITIVITY: <span id="sens-val">MEDIUM</span></label>
-        <input type="range" min="1" max="100" value="50" id="sens-slider" oninput="updateSens()">
+        <div class="slider-row"><span>SENSITIVITY</span><span id="sens-label">MEDIUM</span></div>
+        <input type="range" min="1" max="100" value="50" id="sens-slider" oninput="updateSettings()">
     </div>
 
-    <div class="log" id="debug-log">v2.0 Ready</div>
-    <div id="stop-hint">TAP ANYWHERE TO DISARM</div>
+    <div id="stop-hint">TAP SCREEN TO DISARM</div>
 
     <script>
         // --- CONFIG ---
-        let state = 'IDLE'; // IDLE, COUNTDOWN, ARMED, ALARM
-        let sensitivity = 50; // 1 (Sensitive) to 100 (Hard)
-        let lastX, lastY, lastZ;
-        let audioCtx;
+        let state = 'IDLE'; 
+        let sensitivity = 50; 
         
-        // --- AUDIO ENGINE (The Siren) ---
-        function playSiren() {
-            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            
-            osc.type = 'sawtooth'; // Harsh sound
-            osc.frequency.setValueAtTime(500, audioCtx.currentTime);
-            // Whoop Whoop effect
-            osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.5);
-            osc.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 1.0);
-            
-            gain.gain.value = 1.0;
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            
-            // Loop the siren every 1 second
-            osc.stop(audioCtx.currentTime + 1);
-            setTimeout(() => { if(state === 'ALARM') playSiren(); }, 1000);
-        }
+        // Motion Vars
+        let lastX = null, lastY = null, lastZ = null;
+        // Audio Vars
+        let micStream, analyser, dataArray;
+        // Output Vars
+        let audioCtx;
 
-        // --- CORE LOGIC ---
+        // --- CORE CONTROL ---
         function handleButton() {
-            if(state === 'IDLE') startCountdown();
+            if(state === 'IDLE') requestPermissions();
             else if(state === 'ARMED' || state === 'COUNTDOWN') disarm();
         }
 
-        function startCountdown() {
-            // iOS Permission Check (Required for iPhone, ignored by Android)
+        async function requestPermissions() {
+            // 1. Audio Permission
+            try {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                setupAudioMonitor();
+            } catch(e) {
+                alert("Microphone Access Denied. Sentry will work on Motion only.");
+            }
+
+            // 2. Motion Permission (iOS)
             if (typeof DeviceMotionEvent.requestPermission === 'function') {
                 DeviceMotionEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') beginSequence();
-                        else alert('Permission Required');
-                    })
+                    .then(resp => { if (resp === 'granted') startCountdown(); })
                     .catch(console.error);
             } else {
-                // Android just works
-                beginSequence();
+                startCountdown();
             }
         }
 
-        function beginSequence() {
+        function startCountdown() {
             state = 'COUNTDOWN';
             const btn = document.getElementById('main-btn');
-            const status = document.getElementById('status-text');
-            
             btn.classList.add('counting');
             let count = 5;
-            
-            status.innerText = "PLACE ON FLOOR...";
             btn.innerHTML = count;
-
+            
             const timer = setInterval(() => {
                 count--;
                 btn.innerHTML = count;
@@ -141,89 +137,134 @@
         function armSystem() {
             state = 'ARMED';
             const btn = document.getElementById('main-btn');
-            
             btn.classList.remove('counting');
             btn.classList.add('armed');
             btn.innerHTML = "SYSTEM<br>ARMED";
-            document.getElementById('status-text').innerText = "MONITORING SENSORS...";
-            document.getElementById('status-text').style.color = "var(--danger)";
             
-            // Reset sensor baseline
+            // Activate Sensors
             lastX = null;
-            
-            // Start listening
-            window.addEventListener('devicemotion', monitorMotion);
+            window.addEventListener('devicemotion', handleMotion);
+            if(micStream) analyzeAudioLoop();
         }
 
-        function monitorMotion(event) {
+        // --- SENSOR 1: MOTION (Vibration + Tilt) ---
+        function handleMotion(event) {
             if(state !== 'ARMED') return;
-
-            // Get Acceleration (Gravity excluded is better for bumps)
-            const acc = event.acceleration;
-            if(!acc) return; // Some Androids need 'accelerationIncludingGravity'
+            
+            // Get data
+            const acc = event.accelerationIncludingGravity; 
+            if(!acc) return;
 
             const x = acc.x;
             const y = acc.y;
             const z = acc.z;
 
-            // Initialize baseline
-            if(lastX === null) { lastX = x; lastY = y; lastZ = z; return; }
+            if(lastX === null) { lastX=x; lastY=y; lastZ=z; return; }
 
-            // Calculate Delta (How much did it move?)
-            const deltaX = Math.abs(x - lastX);
-            const deltaY = Math.abs(y - lastY);
-            const deltaZ = Math.abs(z - lastZ);
+            const delta = Math.abs(x-lastX) + Math.abs(y-lastY) + Math.abs(z-lastZ);
+            
+            // Update HUD
+            document.getElementById('val-motion').innerText = delta.toFixed(1);
+            if(delta > 0.5) document.getElementById('box-motion').classList.add('active');
+            else document.getElementById('box-motion').classList.remove('active');
 
-            // Sensitivity Math (Inverted slider: Lower slider = Higher sensitivity)
-            // Slider 50 = Threshold 2.0
-            const threshold = (sensitivity / 20); 
+            // Trigger Logic (Lower threshold = higher sensitivity)
+            const threshold = (105 - sensitivity) / 5; 
+            if(delta > threshold) triggerAlarm("MOTION");
 
-            if(deltaX > threshold || deltaY > threshold || deltaZ > threshold) {
-                triggerAlarm();
-            }
-
-            lastX = x; lastY = y; lastZ = z;
+            lastX=x; lastY=y; lastZ=z;
         }
 
-        function triggerAlarm() {
-            state = 'ALARM';
-            window.removeEventListener('devicemotion', monitorMotion);
+        // --- SENSOR 2: AUDIO (Volume) ---
+        function setupAudioMonitor() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioContext();
+            analyser = ctx.createAnalyser();
+            const src = ctx.createMediaStreamSource(micStream);
+            src.connect(analyser);
+            analyser.fftSize = 256;
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        }
+
+        function analyzeAudioLoop() {
+            if(state !== 'ARMED') return;
             
-            // UI Changes
+            requestAnimationFrame(analyzeAudioLoop);
+            analyser.getByteFrequencyData(dataArray);
+
+            // Calculate Average Volume
+            let sum = 0;
+            for(let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+            const avg = sum / dataArray.length;
+
+            // Update HUD
+            document.getElementById('val-audio').innerText = Math.floor(avg);
+            if(avg > 10) document.getElementById('box-audio').classList.add('active');
+            else document.getElementById('box-audio').classList.remove('active');
+
+            // Trigger Logic (Volume usually 0-255)
+            // Sensitivity 50 -> Threshold 30
+            // Sensitivity 100 -> Threshold 10
+            const threshold = (110 - sensitivity); 
+            
+            if(avg > threshold) triggerAlarm("AUDIO");
+        }
+
+        // --- ALARM LOGIC ---
+        function triggerAlarm(source) {
+            if(state === 'ALARM') return; // Already alarming
+            state = 'ALARM';
+            
+            // Stop Sensors
+            window.removeEventListener('devicemotion', handleMotion);
+            
+            // UI
             document.body.classList.add('alarm-active');
             document.getElementById('stop-hint').style.display = 'block';
             
-            // Audio
+            // Sound
             playSiren();
             
-            // Allow tap anywhere to stop
+            // Stop
             document.body.onclick = disarm;
+        }
+
+        function playSiren() {
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+            gain.gain.value = 1.0;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+            
+            setTimeout(() => { if(state === 'ALARM') playSiren(); }, 500);
         }
 
         function disarm() {
             state = 'IDLE';
-            window.removeEventListener('devicemotion', monitorMotion);
-            
-            // Reset UI
+            window.removeEventListener('devicemotion', handleMotion);
             document.body.classList.remove('alarm-active');
             document.getElementById('stop-hint').style.display = 'none';
             document.body.onclick = null;
             
             const btn = document.getElementById('main-btn');
-            btn.classList.remove('armed');
+            btn.classList.remove('armed'); 
             btn.classList.remove('counting');
             btn.innerHTML = "ARM<br>SYSTEM";
-            
-            document.getElementById('status-text').innerText = "SYSTEM DISARMED";
-            document.getElementById('status-text').style.color = "#666";
         }
 
-        function updateSens() {
+        function updateSettings() {
             sensitivity = document.getElementById('sens-slider').value;
             let label = "MEDIUM";
-            if(sensitivity < 30) label = "HIGH (HAIR TRIGGER)";
-            if(sensitivity > 70) label = "LOW (HARD KICK)";
-            document.getElementById('sens-val').innerText = label;
+            if(sensitivity > 80) label = "HIGH (HAIR TRIGGER)";
+            if(sensitivity < 20) label = "LOW (HARD IMPACT)";
+            document.getElementById('sens-label').innerText = label;
         }
     </script>
 </body>
