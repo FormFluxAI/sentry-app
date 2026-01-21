@@ -3,19 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VANGUARD APEX</title>
+    <title>ECHO: ONE</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
+        /* --- BRANDING: MATTE BLACK & GOLD --- */
         :root {
-            --primary: #00f3ff; --alert: #ff003c; --success: #00ff41; 
-            --bg: #050505; --panel: #111; --text-muted: #888;
+            --gold: #FFD700;
+            --gold-dim: #998100;
+            --alert: #FF2A2A;
+            --bg: #050505;
+            --card-bg: #111111;
+            --border: #333;
+            --text-main: #eee;
+            --text-muted: #666;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; font-family: 'Segoe UI', system-ui, sans-serif; }
         
-        body { background: var(--bg); color: #fff; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        
+        body { 
+            background-color: var(--bg); 
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 70%);
+            color: var(--text-main); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+        }
 
         /* --- 1. AUTH SCREEN --- */
         #auth-view {
@@ -23,87 +35,123 @@
             background: #000; z-index: 9999; display: flex; flex-direction: column; 
             align-items: center; justify-content: center; padding: 30px;
         }
+        .auth-logo { font-size: 3rem; font-weight: 900; letter-spacing: 5px; color: var(--gold); margin-bottom: 5px; text-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+        .auth-sub { color: var(--text-muted); font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 50px; text-transform: uppercase; }
+        
         .social-btn {
-            width: 100%; max-width: 320px; padding: 12px; margin: 8px 0; border-radius: 4px;
-            border: 1px solid #333; background: #1a1a1a; color: #fff; font-weight: 600;
-            display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;
+            width: 100%; max-width: 320px; padding: 15px; margin: 10px 0; border-radius: 4px;
+            border: 1px solid #333; background: #111; color: #fff; font-weight: 600; font-size: 0.9rem;
+            display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: 0.2s;
         }
-        .social-btn.google { background: #fff; color: #333; }
-        .social-btn.apple { background: #000; border: 1px solid #fff; }
+        .social-btn:active { transform: scale(0.98); border-color: var(--gold); }
+        .social-btn.google { background: #fff; color: #000; border: none; }
 
-        /* --- 2. MAIN LAYOUT --- */
+        /* --- 2. HEADER --- */
         header { 
-            padding: 15px; background: rgba(0,0,0,0.9); border-bottom: 1px solid #333; 
+            padding: 15px 20px; background: rgba(5,5,5,0.95); border-bottom: 1px solid var(--border); 
             display: flex; justify-content: space-between; align-items: center; z-index: 100;
+            backdrop-filter: blur(10px);
         }
-        .brand { font-size: 1.2rem; font-weight: 900; letter-spacing: 2px; color: var(--primary); }
-        .user-profile { font-size: 0.8rem; color: #666; display: flex; align-items: center; gap: 5px; }
+        .brand { font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; color: var(--gold); display: flex; align-items: center; gap: 8px; }
+        .user-pill { font-size: 0.7rem; color: #aaa; background: #222; padding: 4px 10px; border-radius: 20px; border: 1px solid #333; }
 
-        /* --- 3. SCROLLABLE CONTENT --- */
-        #main-content { flex: 1; overflow-y: auto; position: relative; padding-bottom: 90px; }
-        
-        .view-section { display: none; padding: 10px; }
-        .view-section.active { display: block; animation: fadeIn 0.3s; }
+        /* --- 3. TABS --- */
+        .tabs { display: flex; background: #000; border-bottom: 1px solid var(--border); }
+        .tab { 
+            flex: 1; padding: 15px; text-align: center; color: var(--text-muted); 
+            font-size: 0.75rem; font-weight: 700; cursor: pointer; letter-spacing: 1px; 
+        }
+        .tab.active { color: var(--gold); border-bottom: 2px solid var(--gold); background: linear-gradient(to top, rgba(255, 215, 0, 0.05), transparent); }
 
-        /* --- 4. LIST ITEM DESIGN (Fixes Stretching) --- */
+        /* --- 4. SCROLL CONTENT --- */
+        #main-content { flex: 1; overflow-y: auto; position: relative; scroll-behavior: smooth; }
+        .view-section { display: none; padding: 15px; padding-bottom: 120px; /* Space for footer */ }
+        .view-section.active { display: block; animation: fadeUp 0.3s ease-out; }
+
+        /* --- 5. MODULE LIST (Refined) --- */
         .module-row {
-            background: var(--panel); border-bottom: 1px solid #222; padding: 15px;
+            background: var(--card-bg); border: 1px solid var(--border); padding: 18px;
             display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 8px; border-radius: 8px; transition: 0.2s;
+            margin-bottom: 12px; border-radius: 6px; position: relative; overflow: hidden;
         }
-        .module-row.active { border-left: 4px solid var(--primary); background: #161616; }
-        .module-row.triggered { border-left: 4px solid var(--alert); background: rgba(50,0,0,0.3); }
+        /* Selection State */
+        .module-row.selected { border-color: var(--gold-dim); background: #1a1500; }
+        .module-row.selected::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--gold); }
+        /* Armed State */
+        .module-row.armed { border-color: #0f0; background: rgba(0,50,0,0.2); }
+        .module-row.armed::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#0f0; }
+        /* Triggered */
+        .module-row.triggered { border-color: var(--alert); background: rgba(50,0,0,0.4); animation: flashRed 0.5s infinite; }
 
-        .mod-info { flex: 1; margin-left: 15px; }
-        .mod-title { font-weight: bold; font-size: 1rem; color: #eee; }
-        .mod-desc { font-size: 0.75rem; color: var(--text-muted); }
+        .mod-icon { font-size: 1.8rem; color: #444; width: 40px; text-align: center; }
+        .module-row.selected .mod-icon { color: var(--gold); }
+        .module-row.armed .mod-icon { color: #0f0; }
+
+        .mod-info { flex: 1; margin: 0 15px; }
+        .mod-title { font-weight: 700; font-size: 0.95rem; color: #eee; margin-bottom: 4px; }
+        .mod-desc { font-size: 0.7rem; color: #888; }
         
-        /* Visualizer Mini-Bar */
-        .mini-meter { width: 100%; height: 4px; background: #222; margin-top: 5px; border-radius: 2px; position: relative; }
-        .mini-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.1s; }
-        .mini-trig { position: absolute; top:0; bottom:0; width: 2px; background: var(--alert); }
+        /* Checkbox Styling */
+        .chk-wrap { position: relative; width: 24px; height: 24px; }
+        .chk-box { 
+            appearance: none; width: 100%; height: 100%; border: 2px solid #444; border-radius: 4px; background: transparent; cursor: pointer;
+        }
+        .chk-box:checked { background: var(--gold); border-color: var(--gold); }
+        
+        /* Settings Gear */
+        .gear-btn { color: #444; padding: 10px; margin-right: -10px; cursor: pointer; }
+        .module-row.selected .gear-btn { color: #888; }
 
-        /* Checkbox Toggle */
-        .toggle-chk { width: 24px; height: 24px; accent-color: var(--primary); transform: scale(1.5); cursor: pointer; }
-        .gear-btn { color: #555; padding: 10px; cursor: pointer; }
+        /* Mini Meters */
+        .meter-track { height: 3px; background: #222; margin-top: 8px; position: relative; width: 100%; border-radius: 2px; }
+        .meter-fill { height: 100%; width: 0%; background: var(--gold); transition: width 0.1s; }
+        .meter-trig { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--alert); z-index: 5; }
 
-        /* --- 5. MAP & LOGS --- */
-        #map-canvas { width: 100%; height: 70vh; border-radius: 8px; margin-top: 10px; }
-        .log-entry { font-family: monospace; font-size: 0.8rem; border-bottom: 1px solid #222; padding: 8px 0; }
-        .threat-alert { background: var(--alert); color: white; padding: 10px; text-align: center; border-radius: 4px; display: none; margin-bottom: 10px; font-weight: bold; }
+        /* --- 6. MAP & LOGS --- */
+        #map-canvas { width: 100%; height: 65vh; border-radius: 6px; border: 1px solid var(--border); margin-top: 10px; }
+        .log-item { 
+            font-family: 'Courier New', monospace; font-size: 0.75rem; 
+            border-left: 2px solid #333; padding: 8px 12px; margin-bottom: 5px; background: #0a0a0a; 
+        }
+        .log-item.alert { border-left-color: var(--alert); color: #ffadad; }
 
-        /* --- 6. FOOTER CONTROLS --- */
+        /* --- 7. FOOTER CONTROLS --- */
         .control-dock {
-            position: fixed; bottom: 0; left: 0; width: 100%; background: #000;
-            border-top: 1px solid #333; padding: 15px; display: flex; gap: 10px; z-index: 500;
+            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95);
+            border-top: 1px solid var(--border); padding: 15px 20px; display: flex; gap: 12px; z-index: 500;
+            backdrop-filter: blur(10px);
         }
-        .btn-action {
-            flex: 1; padding: 15px; border-radius: 50px; border: none; font-weight: 900;
-            font-size: 1rem; cursor: pointer; text-transform: uppercase;
+        .btn {
+            flex: 1; padding: 16px; border-radius: 6px; border: none; font-weight: 800;
+            font-size: 0.9rem; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+            transition: 0.2s;
         }
-        .btn-arm { background: var(--primary); color: #000; box-shadow: 0 0 15px rgba(0,243,255,0.3); }
-        .btn-disarm { background: var(--alert); color: #fff; box-shadow: 0 0 15px rgba(255,0,60,0.3); display: none; }
-        .btn-panic { width: 60px; border-radius: 8px; background: #222; color: var(--alert); border: 1px solid var(--alert); }
+        .btn:active { transform: scale(0.97); }
+        
+        .btn-arm { background: var(--gold); color: #000; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2); }
+        .btn-disarm { background: transparent; border: 1px solid var(--alert); color: var(--alert); display: none; }
+        .btn-panic { flex: 0.3; background: var(--alert); color: #fff; display: flex; align-items: center; justify-content: center; }
 
-        /* --- 7. SETTINGS MODAL --- */
+        /* --- 8. SETTINGS MODAL --- */
         #settings-modal {
-            position: fixed; bottom: 0; left: 0; width: 100%; background: #111; 
-            border-top: 2px solid var(--primary); padding: 25px; z-index: 2000;
-            transform: translateY(100%); transition: 0.3s;
+            position: fixed; bottom: 0; left: 0; width: 100%; background: #161616; 
+            border-top: 2px solid var(--gold); padding: 25px; z-index: 2000;
+            transform: translateY(100%); transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 12px 12px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
         }
         #settings-modal.open { transform: translateY(0); }
-        input[type=range] { width: 100%; margin: 15px 0; accent-color: var(--primary); }
+        
+        input[type=range] { width: 100%; margin: 20px 0; accent-color: var(--gold); background: #333; height: 4px; border-radius: 2px; -webkit-appearance: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--gold); border-radius: 50%; box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
 
-        /* HIDDEN */
+        /* UTILS */
         video { position: fixed; top: -9999px; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes strobe { 0% { background: #fff; } 50% { background: #000; } 100% { background: #fff; } }
-        #strobe-fx { position: fixed; top:0; left:0; width:100%; height:100%; z-index:9000; display:none; pointer-events:none; }
-
-        /* TABS */
-        .tabs { display: flex; background: #111; border-bottom: 1px solid #333; }
-        .tab { flex: 1; padding: 15px; text-align: center; color: #666; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
-        .tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes flashRed { 0%, 100% { background: rgba(50,0,0,0.5); } 50% { background: rgba(255,0,0,0.2); } }
+        #strobe-fx { position: fixed; top:0; left:0; width:100%; height:100%; z-index:9000; display:none; pointer-events:none; background: #fff; }
+        
+        .status-badge { font-size: 0.6rem; text-transform: uppercase; color: #666; margin-top: 4px; }
+        .module-row.armed .status-badge { color: #0f0; }
     </style>
 </head>
 <body>
@@ -111,94 +159,90 @@
     <div id="strobe-fx"></div>
 
     <div id="auth-view">
-        <h1 style="color:var(--primary); font-size:2.5rem; margin-bottom:0;">VANGUARD</h1>
-        <p style="color:#666; margin-bottom:40px;">APEX SECURITY SUITE</p>
+        <div class="auth-logo">ECHO:ONE</div>
+        <div class="auth-sub">TACTICAL DEFENSE SUITE</div>
         
         <div class="social-btn google" onclick="auth.login('Google User')">
-            <span style="font-weight:bold; color:red;">G</span> Continue with Google
+            <span style="font-weight:bold; color:#4285F4; font-size:1.2rem;">G</span> Continue with Google
         </div>
-        <div class="social-btn apple" onclick="auth.login('Apple User')">
+        <div class="social-btn" onclick="auth.login('Apple User')">
             <span style="font-size:1.2rem;"></span> Continue with Apple
         </div>
-        <div class="social-btn" onclick="auth.login('Guest')" style="border:none; background:none; color:#666;">
-            Continue as Guest
+        <div class="social-btn" onclick="auth.login('Guest Op')" style="background:transparent; border:none; color:#666;">
+            Initialize as Guest
         </div>
     </div>
 
     <header>
-        <div class="brand">VANGUARD</div>
-        <div class="user-profile" id="user-display">Guest</div>
+        <div class="brand"><i class="material-icons" style="color:var(--gold)">shield</i> ECHO:ONE</div>
+        <div class="user-pill" id="user-display">OFFLINE</div>
     </header>
 
     <div class="tabs">
         <div class="tab active" onclick="nav('dashboard')">PROTOCOLS</div>
         <div class="tab" onclick="nav('map')">TAC-MAP</div>
-        <div class="tab" onclick="nav('logs')">LOGS</div>
+        <div class="tab" onclick="nav('logs')">INTEL</div>
     </div>
 
     <div id="main-content">
         
         <div id="view-dashboard" class="view-section active">
-            <div id="module-list">
-                </div>
-            <div style="height: 100px;"></div> </div>
+            <div id="module-list"></div>
+        </div>
 
         <div id="view-map" class="view-section">
-            <div class="threat-alert" id="map-alert">THREAT DETECTED - EVADE VECTOR PLOTTED</div>
+            <div style="background: var(--alert); color: white; padding: 10px; text-align: center; border-radius: 4px; display: none; font-weight: bold; font-size: 0.8rem;" id="map-alert">
+                <i class="material-icons" style="vertical-align: bottom; font-size: 1.1rem;">warning</i> THREAT DETECTED - EVASION VECTOR PLOTTED
+            </div>
             <div id="map-canvas"></div>
-            <p style="color:#666; font-size:0.8rem; text-align:center; margin-top:10px;">
-                Green Line indicates safest path away from detected Gunshots/Threats.
-            </p>
         </div>
 
         <div id="view-logs" class="view-section">
-            <button onclick="logger.share()" style="width:100%; padding:10px; background:#333; color:fff; border:none; margin-bottom:10px; border-radius:4px;">SHARE / EXPORT LOGS</button>
+            <button onclick="logger.download()" style="width:100%; padding:12px; background:#222; border:1px solid #333; color:var(--gold); font-weight:bold; margin-bottom:15px; border-radius:4px;">EXPORT INTEL LOG</button>
             <div id="log-container"></div>
         </div>
 
     </div>
 
     <div id="settings-modal">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-            <h2 id="set-title" style="margin:0; color:var(--primary)">SETTINGS</h2>
-            <button onclick="ui.closeSettings()" style="background:none; border:none; color:#fff;">DONE</button>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <h3 id="set-title" style="margin:0; color:var(--gold)">SETTINGS</h3>
+            <i class="material-icons" onclick="ui.closeSettings()" style="color:#666; cursor:pointer;">close</i>
         </div>
         <div id="set-body"></div>
     </div>
 
     <div class="control-dock">
-        <button class="btn-panic" onclick="alarm.panic()">SOS</button>
-        <button id="btn-arm" class="btn-action btn-arm" onclick="sys.arm()">ACTIVATE PROTOCOLS</button>
-        <button id="btn-disarm" class="btn-action btn-disarm" onclick="sys.disarm()">DISARM SYSTEM</button>
+        <button class="btn btn-panic" onclick="alarm.panic()"><i class="material-icons">notifications_active</i></button>
+        <button id="btn-arm" class="btn btn-arm" onclick="sys.arm()">ENGAGE PROTOCOLS</button>
+        <button id="btn-disarm" class="btn btn-disarm" onclick="sys.disarm()">STAND DOWN</button>
     </div>
 
     <video id="cam" autoplay playsinline muted></video>
     <canvas id="cvs" style="display:none;"></canvas>
 
 <script>
-/* --- VANGUARD APEX CORE --- */
+/** ECHO:ONE CORE LOGIC */
 
 // 1. CONFIGURATION
 const CONFIG = [
-    { id: 'intruder', name: 'Intruder', desc: 'Visual Motion + Strobe', icon: 'videocam', thresh: 20, type: 'visual' },
-    { id: 'lumen',    name: 'Lumen',    desc: 'Pocket/Bag Light Trap',  icon: 'light_mode', thresh: 60, type: 'visual' },
-    { id: 'seismic',  name: 'Seismic',  desc: 'Vibration / Door',       icon: 'vibration',  thresh: 30, type: 'motion' },
-    { id: 'audio',    name: 'Audio',    desc: 'Gunshot / Scream',       icon: 'graphic_eq', thresh: 70, type: 'audio' },
-    { id: 'wreck',    name: 'Wreck',    desc: 'Impact > 4G',            icon: 'car_crash',  thresh: 50, type: 'motion' },
-    { id: 'velocity', name: 'Velocity', desc: 'Speed > 15 MPH',         icon: 'speed',      thresh: 15, type: 'gps' },
-    { id: 'geo',      name: 'Perimeter',desc: 'GPS Geofence (50m)',     icon: 'radar',      thresh: 50, type: 'gps' },
-    { id: 'net',      name: 'NetSentry',desc: 'Offline Detector',       icon: 'wifi_off',   thresh: 0,  type: 'logic' },
-    { id: 'deadman',  name: 'Dead Man', desc: 'Safety Timer (5min)',    icon: 'timer',      thresh: 5,  type: 'logic' },
-    { id: 'snoop',    name: 'Snoop',    desc: 'Device Tilt',            icon: 'touch_app',  thresh: 15, type: 'motion' },
-    { id: 'mag',      name: 'Mag-Field',desc: 'Metal Detector',         icon: 'explore',    thresh: 60, type: 'mag' }
+    { id: 'audio',    name: 'AUDIO SENTINEL', desc: 'Glass Break / Gunshot', icon: 'graphic_eq', thresh: 70, type: 'audio' },
+    { id: 'seismic',  name: 'SEISMIC GUARD',  desc: 'Door/Floor Vibration',  icon: 'vibration',  thresh: 30, type: 'motion' },
+    { id: 'lumen',    name: 'LUMEN TRAP',     desc: 'Pocket/Bag Removal',    icon: 'light_mode', thresh: 60, type: 'visual' },
+    { id: 'intruder', name: 'INTRUDER CAM',   desc: 'Motion + Strobe',       icon: 'videocam',   thresh: 20, type: 'visual' },
+    { id: 'snoop',    name: 'SNOOP DETECT',   desc: 'Device Handling',       icon: 'touch_app',  thresh: 15, type: 'motion' },
+    { id: 'wreck',    name: 'CRASH MONITOR',  desc: 'Impact > 4G',           icon: 'car_crash',  thresh: 50, type: 'motion' },
+    { id: 'velocity', name: 'VELOCITY LOCK',  desc: 'Speed > 15 MPH',        icon: 'speed',      thresh: 15, type: 'gps' },
+    { id: 'geo',      name: 'PERIMETER',      desc: 'GPS Geofence (50m)',    icon: 'radar',      thresh: 50, type: 'gps' },
+    { id: 'net',      name: 'NET-SENTRY',     desc: 'Anti-Jammer/Offline',   icon: 'wifi_off',   thresh: 0,  type: 'logic' },
+    { id: 'deadman',  name: 'DEAD MAN',       desc: 'Safety Timer (5min)',   icon: 'timer',      thresh: 5,  type: 'logic' },
+    { id: 'mag',      name: 'MAG-FIELD',      desc: 'Metal Detection',       icon: 'explore',    thresh: 60, type: 'mag' }
 ];
 
 const state = {
-    user: null,
-    armed: false,
-    modules: {}, // Stores selected/armed state
-    values: {},  // Stores live sensor values
-    base: {}     // Stores baselines
+    modules: {},
+    values: {},
+    base: {}
 };
 
 // Initialize State
@@ -207,31 +251,30 @@ CONFIG.forEach(m => {
     state.values[m.id] = 0;
 });
 
-// --- 2. AUTHENTICATION ---
+// --- AUTH ---
 const auth = {
-    login: (provider) => {
-        state.user = provider;
-        document.getElementById('user-display').innerHTML = `<i class="material-icons" style="font-size:1rem">person</i> ${provider}`;
-        document.getElementById('auth-view').style.display = 'none';
-        
-        // Init Hardware Permission Sequence
-        setTimeout(sys.initHardware, 500);
+    login: (user) => {
+        document.getElementById('user-display').innerText = user;
+        document.getElementById('auth-view').style.opacity = 0;
+        setTimeout(() => {
+            document.getElementById('auth-view').style.display = 'none';
+            sys.initHardware();
+        }, 500);
     }
 };
 
-// --- 3. SYSTEM CORE ---
+// --- SYSTEM ---
 const sys = {
-    ctx: null, stream: null, analyser: null, map: null, userMark: null,
+    ctx: null, stream: null, analyser: null, map: null, userMark: null, lastLight: 0,
 
     initHardware: async () => {
-        // Render UI List
-        ui.renderList();
+        ui.render();
         
         try {
-            // Audio
+            // Audio Context
             sys.ctx = new (window.AudioContext || window.webkitAudioContext)();
             
-            // Camera (Robust Failover)
+            // Camera (Robust)
             try {
                 sys.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
             } catch(e) {
@@ -250,50 +293,44 @@ const sys = {
             // Map
             mapLogic.init();
 
-            // Start Loops
+            // Loops
             requestAnimationFrame(sys.visualLoop);
             window.addEventListener('devicemotion', sys.motionLoop);
             navigator.geolocation.watchPosition(mapLogic.update, null, {enableHighAccuracy:true});
             window.addEventListener('offline', () => { if(state.modules.net.active) alarm.trigger('net'); });
 
-        } catch(e) {
-            alert("Hardware Init Failed: " + e.message);
-        }
+        } catch(e) { console.log(e); }
     },
 
     arm: () => {
-        // Activate selected modules
-        let count = 0;
+        let activeCount = 0;
         CONFIG.forEach(m => {
             if(state.modules[m.id].selected) {
                 state.modules[m.id].active = true;
-                count++;
+                activeCount++;
                 
-                // Set Baselines
-                if(m.id === 'seismic') state.base.acc = null; // Reset
+                // Baselines
+                if(m.id === 'seismic') state.base.acc = null;
                 if(m.id === 'geo') state.base.geoStart = mapLogic.lastPos;
                 if(m.id === 'deadman') sys.startTimer(state.modules.deadman.thresh);
-                if(m.id === 'lumen') setTimeout(() => state.modules.lumen.ready = true, 3000); // 3s delay
+                if(m.id === 'lumen') setTimeout(() => state.modules.lumen.ready = true, 3000);
             }
         });
 
-        if(count === 0) return alert("Select at least one protocol.");
+        if(activeCount === 0) return alert("SELECT PROTOCOLS FIRST");
 
         if(sys.ctx.state === 'suspended') sys.ctx.resume();
-        
-        state.armed = true;
         document.getElementById('btn-arm').style.display = 'none';
         document.getElementById('btn-disarm').style.display = 'block';
-        ui.renderList(); // Refresh UI to show armed state
+        ui.render();
     },
 
     disarm: () => {
-        state.armed = false;
         CONFIG.forEach(m => state.modules[m.id].active = false);
         document.getElementById('btn-arm').style.display = 'block';
         document.getElementById('btn-disarm').style.display = 'none';
         alarm.stopStrobe();
-        ui.renderList();
+        ui.render();
     },
 
     startTimer: (mins) => {
@@ -305,37 +342,39 @@ const sys = {
         }, 1000);
     },
 
-    // --- LOOPS ---
+    // --- SENSOR LOOPS ---
     visualLoop: () => {
         requestAnimationFrame(sys.visualLoop);
         if(!sys.stream) return;
 
-        // 1. VIDEO ANALYSIS (Sample Grid Method - Faster)
+        // 1. Video (Optimized for Android)
         const cvs = document.getElementById('cvs');
         const ctx = cvs.getContext('2d');
         const vid = document.getElementById('cam');
 
         if(vid.readyState === vid.HAVE_ENOUGH_DATA) {
-            cvs.width = 30; cvs.height = 30; // Small sample size
-            ctx.drawImage(vid, 0, 0, 30, 30);
-            const data = ctx.getImageData(0,0,30,30).data;
+            cvs.width = 40; cvs.height = 40;
+            ctx.drawImage(vid, 0, 0, 40, 40);
+            const data = ctx.getImageData(0,0,40,40).data;
             
             let total = 0;
             for(let i=0; i<data.length; i+=4) total += data[i];
-            const avg = Math.floor(total / 900); // 0-255 brightness
+            const avg = Math.floor(total / 1600); // 0-255
 
-            // Update State
+            // BOOSTED SENSITIVITY VISUALS
             state.values.lumen = (avg/255)*100;
-            state.values.intruder = Math.abs(avg - (state.base.light || avg)) * 5; // Delta
             
-            // Logic
+            // Delta calculation for intruder
+            const delta = Math.abs(avg - sys.lastLight);
+            state.values.intruder = Math.min(delta * 10, 100); // Multiplier to make bar move more
+
             if(state.modules.lumen.active && state.modules.lumen.ready && state.values.lumen > state.modules.lumen.thresh) alarm.trigger('lumen');
             if(state.modules.intruder.active && state.values.intruder > state.modules.intruder.thresh) alarm.trigger('intruder');
 
-            state.base.light = avg;
+            sys.lastLight = avg;
         }
 
-        // 2. AUDIO ANALYSIS
+        // 2. Audio
         if(sys.analyser) {
             const arr = new Uint8Array(sys.analyser.frequencyBinCount);
             sys.analyser.getByteFrequencyData(arr);
@@ -344,11 +383,11 @@ const sys = {
 
             if(state.modules.audio.active && state.values.audio > state.modules.audio.thresh) {
                 alarm.trigger('audio');
-                mapLogic.plotEvasion(); // Gunshot detected -> Map evade
+                mapLogic.plotEvasion();
             }
         }
         
-        ui.updateMeters(); // Refresh visuals
+        ui.updateMeters();
     },
 
     motionLoop: (e) => {
@@ -359,11 +398,10 @@ const sys = {
         const diff = Math.abs(acc.x - state.base.acc.x) + Math.abs(acc.y - state.base.acc.y);
         const g = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2) / 9.8;
 
-        state.values.seismic = Math.min(diff * 50, 100);
+        state.values.seismic = Math.min(diff * 50, 100); // Scale up small vibes
         state.values.snoop = Math.min(diff * 20, 100);
         state.values.wreck = ((g-1)/4)*100;
 
-        // Logic
         if(state.modules.seismic.active && state.values.seismic > state.modules.seismic.thresh) alarm.trigger('seismic');
         if(state.modules.snoop.active && state.values.snoop > state.modules.snoop.thresh) alarm.trigger('snoop');
         if(state.modules.wreck.active && state.values.wreck > state.modules.wreck.thresh) alarm.trigger('wreck');
@@ -374,30 +412,28 @@ const sys = {
     }
 };
 
-// --- 4. MAP & EVADE ---
+// --- MAP ---
 const mapLogic = {
     init: () => {
         try {
             sys.map = L.map('map-canvas').setView([0,0], 13);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(sys.map);
-            sys.userMark = L.circleMarker([0,0], {color:'#00f3ff'}).addTo(sys.map);
-        } catch(e) {}
+            sys.userMark = L.circleMarker([0,0], {color: '#00f3ff'}).addTo(sys.map);
+        } catch(e){}
     },
     update: (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         mapLogic.lastPos = [lat, lng];
-        const speed = (pos.coords.speed || 0) * 2.237; // MPH
+        const speed = (pos.coords.speed || 0) * 2.237;
 
         if(sys.map) {
             sys.userMark.setLatLng([lat, lng]);
             if(!sys.threatMark) sys.map.setView([lat, lng], 15);
         }
 
-        // Logic
         state.values.velocity = speed;
         if(state.modules.velocity.active && speed > state.modules.velocity.thresh) alarm.trigger('velocity');
-        
         if(state.modules.geo.active && state.base.geoStart) {
             const d = mapLogic.dist(lat, lng, state.base.geoStart[0], state.base.geoStart[1]);
             if(d > state.modules.geo.thresh) alarm.trigger('geo');
@@ -405,15 +441,10 @@ const mapLogic = {
     },
     plotEvasion: () => {
         if(!sys.map || !mapLogic.lastPos) return;
-        
-        // Mark threat at current location
         sys.threatMark = L.circleMarker(mapLogic.lastPos, {color:'red', radius:20}).addTo(sys.map);
-        
-        // Calculate safe vector (Simulated 180 flip)
         const safeLat = mapLogic.lastPos[0] + 0.005; 
         const safeLng = mapLogic.lastPos[1] + 0.005;
-        
-        L.polyline([mapLogic.lastPos, [safeLat, safeLng]], {color:'var(--success)', dashArray:'5,10'}).addTo(sys.map);
+        L.polyline([mapLogic.lastPos, [safeLat, safeLng]], {color:'#00ff41', dashArray:'5,10'}).addTo(sys.map);
         document.getElementById('map-alert').style.display = 'block';
     },
     dist: (lat1, lon1, lat2, lon2) => {
@@ -424,7 +455,7 @@ const mapLogic = {
     }
 };
 
-// --- 5. ALARM & LOGS ---
+// --- ALARM ---
 const alarm = {
     trigger: (id) => {
         const row = document.getElementById(`mod-${id}`);
@@ -437,8 +468,8 @@ const alarm = {
         const g = sys.ctx.createGain();
         o.connect(g); g.connect(sys.ctx.destination);
         o.type = 'sawtooth';
-        o.frequency.setValueAtTime(500, sys.ctx.currentTime);
-        o.frequency.linearRampToValueAtTime(1000, sys.ctx.currentTime+0.5);
+        o.frequency.setValueAtTime(600, sys.ctx.currentTime);
+        o.frequency.linearRampToValueAtTime(1200, sys.ctx.currentTime+0.3);
         o.start(); o.stop(sys.ctx.currentTime+1);
 
         // Strobe
@@ -448,19 +479,14 @@ const alarm = {
             setTimeout(() => { s.style.display='none'; s.style.animation='none'; }, 4000);
         }
 
-        // Log
-        logger.add(state.modules[id].name, "TRIGGERED");
-
+        logger.add(CONFIG.find(m=>m.id===id).name, "TRIGGERED");
         setTimeout(() => row.classList.remove('triggered'), 3000);
     },
     panic: () => {
-        alarm.trigger('audio'); 
-        logger.add("PANIC", "SOS BUTTON PRESSED");
+        alarm.trigger('audio');
         alert("PANIC BEACON SENT (Simulated)");
     },
-    stopStrobe: () => {
-        document.getElementById('strobe-fx').style.display='none';
-    }
+    stopStrobe: () => { document.getElementById('strobe-fx').style.display='none'; }
 };
 
 const logger = {
@@ -468,85 +494,98 @@ const logger = {
     add: (mod, evt) => {
         const t = new Date().toLocaleTimeString();
         logger.items.unshift(`[${t}] ${mod}: ${evt}`);
-        document.getElementById('log-container').innerHTML = logger.items.map(l => `<div class="log-entry">${l}</div>`).join('');
+        document.getElementById('log-container').innerHTML = logger.items.map(l => `<div class="log-item alert">${l}</div>`).join('');
     },
-    share: () => {
-        if(navigator.share) {
-            navigator.share({ title: 'Vanguard Log', text: logger.items.join('\n') });
-        } else {
-            alert("Logs copied to clipboard (Simulated)");
-        }
+    download: () => {
+        const b = new Blob([logger.items.join('\n')], {type:'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b);
+        a.download = 'intel_log.txt';
+        a.click();
     }
 };
 
-// --- 6. UI MANAGER ---
+// --- UI ---
 const ui = {
-    renderList: () => {
-        const cont = document.getElementById('module-list');
-        cont.innerHTML = '';
+    render: () => {
+        const list = document.getElementById('module-list');
+        list.innerHTML = '';
         
         CONFIG.forEach(m => {
-            const isActive = state.modules[m.id].selected;
-            const isArmed = state.modules[m.id].active;
+            const st = state.modules[m.id];
+            const armedClass = st.active ? 'armed' : '';
+            const selClass = st.selected ? 'selected' : '';
+            const statusText = st.active ? (m.id==='lumen' && !st.ready ? 'CALIBRATING...' : 'ACTIVE') : 'STANDBY';
             
-            cont.innerHTML += `
-            <div id="mod-${m.id}" class="module-row ${isActive?'active':''} ${isArmed?'armed':''}">
-                <i class="material-icons" style="font-size:1.8rem; color:${isArmed?'var(--success)':'#555'}">${m.icon}</i>
+            list.innerHTML += `
+            <div id="mod-${m.id}" class="module-row ${selClass} ${armedClass}" onclick="ui.select('${m.id}')">
+                <i class="material-icons mod-icon">${m.icon}</i>
                 <div class="mod-info">
                     <div class="mod-title">${m.name}</div>
                     <div class="mod-desc">${m.desc}</div>
-                    <div class="mini-meter"><div class="mini-fill" id="bar-${m.id}"></div><div class="mini-trig" style="left:${state.modules[m.id].thresh}%"></div></div>
+                    <div class="meter-track">
+                        <div class="meter-trig" style="left:${st.thresh}%"></div>
+                        <div class="meter-fill" id="bar-${m.id}"></div>
+                    </div>
+                    <div class="status-badge">${statusText}</div>
                 </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <i class="material-icons gear-btn" onclick="ui.openSettings('${m.id}')">settings</i>
-                    <input type="checkbox" class="toggle-chk" ${isActive?'checked':''} onchange="ui.toggle('${m.id}')">
+                <div style="text-align:right">
+                    <i class="material-icons gear-btn" onclick="ui.settings('${m.id}', event)">settings</i>
+                    <div class="chk-wrap">
+                        <input type="checkbox" class="chk-box" ${st.selected ? 'checked' : ''} disabled>
+                    </div>
                 </div>
             </div>`;
         });
     },
-
-    toggle: (id) => {
+    select: (id) => {
         state.modules[id].selected = !state.modules[id].selected;
-        ui.renderList();
+        ui.render();
     },
-
+    settings: (id, e) => {
+        e.stopPropagation();
+        ui.cur = id;
+        const m = CONFIG.find(x => x.id === id);
+        const st = state.modules[id];
+        
+        document.getElementById('set-title').innerText = m.name;
+        let html = '';
+        
+        if(m.type !== 'logic') {
+            html += `<label style="color:#aaa; font-size:0.8rem">SENSITIVITY THRESHOLD: <span id="lbl-val">${st.thresh}</span></label>
+                     <input type="range" min="1" max="100" value="${st.thresh}" oninput="ui.save(this.value)">`;
+        } else if (id === 'deadman') {
+            html += `<label style="color:#aaa; font-size:0.8rem">TIMER (MINUTES): <span id="lbl-val">${m.thresh}</span></label>
+                     <input type="range" min="1" max="60" value="${m.thresh}" oninput="ui.save(this.value)">`;
+        } else {
+            html += `<div style="color:#666; font-style:italic;">No adjustable settings for this module.</div>`;
+        }
+        
+        document.getElementById('set-body').innerHTML = html;
+        document.getElementById('settings-modal').classList.add('open');
+    },
+    save: (val) => {
+        state.modules[ui.cur].thresh = parseInt(val);
+        document.getElementById('lbl-val').innerText = val;
+        ui.render();
+    },
+    closeSettings: () => document.getElementById('settings-modal').classList.remove('open'),
     updateMeters: () => {
         CONFIG.forEach(m => {
             const el = document.getElementById(`bar-${m.id}`);
             if(el) el.style.width = state.values[m.id] + '%';
         });
-    },
-
-    openSettings: (id) => {
-        ui.curSet = id;
-        document.getElementById('set-title').innerText = state.modules[id].name;
-        document.getElementById('set-body').innerHTML = `
-            <label>SENSITIVITY / THRESHOLD: <span id="lbl-val">${state.modules[id].thresh}</span></label>
-            <input type="range" min="1" max="100" value="${state.modules[id].thresh}" oninput="ui.saveSet(this.value)">
-        `;
-        document.getElementById('settings-modal').classList.add('open');
-    },
-
-    saveSet: (val) => {
-        state.modules[ui.curSet].thresh = parseInt(val);
-        document.getElementById('lbl-val').innerText = val;
-        ui.renderList(); // Update triggers visual
-    },
-
-    closeSettings: () => {
-        document.getElementById('settings-modal').classList.remove('open');
     }
 };
 
 function nav(tab) {
     document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-    document.getElementById(`view-${tab}`).classList.add('active');
-    
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    // Simple tab highlighting logic would be added here
-    if(tab==='map') setTimeout(() => sys.map.invalidateSize(), 200);
+    
+    document.getElementById(`view-${tab}`).classList.add('active');
+    // Simple tab highlighting logic omitted for brevity, would match index
+    if(tab === 'map') setTimeout(() => sys.map.invalidateSize(), 200);
 }
-
 </script>
 </body>
 </html>
