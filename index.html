@@ -9,93 +9,167 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script>
-        window.onerror = function(msg, url, line) {
-            alert("SYSTEM ERROR:\n" + msg + "\nLine: " + line);
-            return false;
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ============================================================
+        // 🔴 STEP 1: PASTE YOUR FIREBASE KEYS BELOW
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBQtOqJblY7VPA12tVdvWQpC5729s6P_Fc",
+            authDomain: "echooneapp.firebaseapp.com",
+            projectId: "echooneapp",
+            storageBucket: "echooneapp.firebasestorage.app",
+            messagingSenderId: "786853432365",
+            appId: "1:786853432365:web:774708eca584e21e797ca4",
+            measurementId: "G-SF674CQL11"
         };
-        
-        // SAFE LOGIN FUNCTION (Guaranteed to exist)
-        function safeLogin(type) {
-            console.log("Login Attempt: " + type);
-            const screen = document.getElementById('auth-screen');
-            if(!screen) return alert("Error: Auth Screen missing");
-            
-            screen.style.opacity = 0;
-            setTimeout(() => {
-                screen.style.display = 'none';
-                // Try to boot hardware, but don't crash if it fails
-                if(window.sys && window.sys.init) {
-                    window.sys.init();
-                } else {
-                    alert("WARNING: Core Systems did not load. Check Console.");
+
+        // --- BACKEND LOGIC ---
+        let app, auth, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            window.isCloudActive = true;
+            console.log("ECHO: ONE CLOUD CONNECTED");
+        } catch(e) {
+            console.warn("LOCAL MODE: Keys missing or invalid.");
+            window.isCloudActive = false;
+        }
+
+        window.backend = {
+            login: (provider) => {
+                // BYPASS: If keys are missing, force local guest mode immediately
+                if(!window.isCloudActive) {
+                    ui.loginSuccess({ displayName: "Operator (Local)", isAnonymous: true });
+                    return;
                 }
                 
-                // Log the entry
-                if(window.logger) window.logger.add("SYSTEM", "OPERATOR LOGIN (" + type + ")");
-            }, 500);
-        }
+                if(provider === 'google') {
+                    const p = new GoogleAuthProvider();
+                    signInWithPopup(auth, p)
+                        .then(res => ui.loginSuccess(res.user))
+                        .catch(e => alert("Login Error: " + e.message));
+                } else {
+                    signInAnonymously(auth)
+                        .then(res => ui.loginSuccess(res.user))
+                        .catch(e => alert("Guest Login Error: " + e.message));
+                }
+            },
+            logEvent: (mod, val) => {
+                if(window.isCloudActive && auth.currentUser) {
+                    addDoc(collection(db, "security_events"), {
+                        owner: "Justin White",
+                        user: auth.currentUser.uid,
+                        module: mod,
+                        value: val,
+                        time: serverTimestamp()
+                    });
+                }
+                console.log(`[DATA LOG] ${mod}: ${val}`);
+            }
+        };
+        
+        window.fbAuth = window.backend;
     </script>
 
     <style>
-        /* BRANDING */
-        :root { --gold:#FFD700; --gold-dim:#998100; --alert:#FF003C; --bg:#050505; --panel:#111; --text:#eee; }
-        * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; font-family:'Helvetica Neue', sans-serif; }
-        body { background-color:var(--bg); color:var(--text); margin:0; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
-
-        /* AUTH */
-        #auth-screen { position:fixed; top:0; left:0; width:100%; height:100%; z-index:9000; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity 0.5s; }
-        .auth-brand { font-size:3rem; font-weight:900; letter-spacing:4px; color:var(--gold); margin-bottom:10px; }
-        .login-btn { width:80%; max-width:300px; padding:15px; border:1px solid #333; background:#111; color:#fff; font-weight:bold; border-radius:4px; margin-bottom:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; }
-        .login-btn:active { border-color:var(--gold); color:var(--gold); }
-
-        /* MAIN UI */
-        header { padding:15px 20px; background:rgba(5,5,5,0.95); border-bottom:1px solid #222; display:flex; justify-content:space-between; align-items:center; }
-        .app-logo { font-weight:800; letter-spacing:1px; color:var(--gold); }
-        .status-badge { font-size:0.65rem; color:#444; background:#111; padding:4px 8px; border-radius:4px; border:1px solid #222; font-weight:bold; }
-        .status-badge.active { color:#000; background:var(--gold); border-color:var(--gold); }
-
-        /* CONTENT */
-        #content { flex:1; overflow-y:auto; padding-bottom:100px; }
-        .view { display:none; padding:15px; animation:fade 0.3s; }
-        .view.active { display:block; }
-
-        /* CARDS */
-        .mod-card { background:#111; border:1px solid #222; border-radius:6px; padding:15px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
-        .mod-card.selected { border-color:var(--gold-dim); background:#161400; }
-        .mod-card.armed { border-color:#0f0; background:rgba(0,50,0,0.2); }
-        .mod-card.triggered { border-color:var(--alert); background:rgba(50,0,0,0.4); animation:flash 0.5s infinite; }
+        /* BRANDING: BLACK & GOLD LUXURY TACTICAL */
+        :root {
+            --gold: #FFD700;
+            --gold-dim: #998100;
+            --alert: #FF003C;
+            --bg: #050505;
+            --panel: #111;
+            --text: #eee;
+        }
         
-        .mod-icon { font-size:1.8rem; color:#444; width:40px; }
-        .mod-text { flex:1; padding:0 15px; }
-        .mod-title { font-weight:bold; font-size:0.9rem; color:#eee; }
-        .mod-desc { font-size:0.7rem; color:#666; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
         
-        .meter { height:3px; background:#222; width:100%; margin-top:8px; position:relative; }
-        .meter-fill { height:100%; background:var(--gold); width:0%; transition:width 0.1s; }
-        .meter-line { position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--alert); z-index:2; }
+        body { 
+            background-color: var(--bg); 
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 80%);
+            color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+        }
 
-        /* TABS */
-        .tabs { display:flex; border-bottom:1px solid #222; background:#000; }
-        .tab { flex:1; padding:15px; text-align:center; color:#666; font-size:0.8rem; font-weight:bold; cursor:pointer; }
-        .tab.active { color:var(--gold); border-bottom:2px solid var(--gold); }
+        /* AUTH SCREEN */
+        #auth-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9000;
+            background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s;
+        }
+        .auth-brand { font-size: 3rem; font-weight: 900; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 30px rgba(255, 215, 0, 0.2); }
+        .auth-copy { font-size: 0.7rem; color: #444; margin-top: 10px; margin-bottom: 40px; text-transform: uppercase; letter-spacing: 2px; }
+        .legal-notice { position: absolute; bottom: 20px; font-size: 0.6rem; color: #333; text-align: center; width: 80%; }
+        
+        .login-btn {
+            width: 80%; max-width: 300px; padding: 15px; border: 1px solid #333; background: #111;
+            color: #fff; font-weight: bold; border-radius: 4px; margin-bottom: 10px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s;
+        }
+        .login-btn:active { border-color: var(--gold); color: var(--gold); }
 
-        /* DOCK */
-        .dock { position:fixed; bottom:0; left:0; width:100%; background:rgba(0,0,0,0.95); border-top:1px solid #222; padding:15px; display:flex; gap:10px; z-index:500; }
-        .btn { flex:1; padding:15px; border-radius:4px; font-weight:800; border:none; cursor:pointer; font-size:0.9rem; text-transform:uppercase; }
-        .btn-arm { background:var(--gold); color:#000; }
-        .btn-disarm { background:transparent; border:1px solid #ff003c; color:#ff003c; display:none; }
-        .btn-panic { flex:0.3; background:var(--alert); color:#fff; }
+        /* HEADER */
+        header { 
+            padding: 15px 20px; background: rgba(5,5,5,0.95); border-bottom: 1px solid #222; 
+            display: flex; justify-content: space-between; align-items: center; z-index: 100;
+        }
+        .app-logo { font-weight: 800; letter-spacing: 1px; color: var(--gold); font-size: 1.1rem; }
+        .status-badge { font-size: 0.65rem; color: #444; background: #111; padding: 4px 8px; border-radius: 4px; border: 1px solid #222; font-weight: bold; }
+        .status-badge.active { color: #000; background: var(--gold); border-color: var(--gold); }
+
+        /* CONTENT AREA */
+        #content { flex: 1; overflow-y: auto; padding-bottom: 100px; }
+        .view { display: none; padding: 15px; animation: fade 0.3s; }
+        .view.active { display: block; }
+
+        /* MODULE LIST */
+        .mod-card {
+            background: #111; border: 1px solid #222; border-radius: 6px; padding: 15px;
+            margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
+            position: relative; overflow: hidden; transition: 0.2s;
+        }
+        .mod-card.selected { border-color: var(--gold-dim); background: #161400; }
+        .mod-card.armed { border-color: #0f0; background: rgba(0, 50, 0, 0.2); }
+        .mod-card.triggered { border-color: var(--alert); background: rgba(50, 0, 0, 0.4); animation: flash 0.5s infinite; }
+
+        .mod-icon { font-size: 1.8rem; color: #444; width: 40px; }
+        .mod-card.armed .mod-icon { color: #0f0; }
+        .mod-card.selected .mod-icon { color: var(--gold); }
+
+        .mod-text { flex: 1; padding: 0 15px; }
+        .mod-title { font-weight: bold; font-size: 0.9rem; color: #eee; }
+        .mod-desc { font-size: 0.7rem; color: #666; margin-top: 2px; }
+
+        /* Visualizers */
+        .meter { height: 3px; background: #222; width: 100%; margin-top: 8px; position: relative; }
+        .meter-fill { height: 100%; background: var(--gold); width: 0%; transition: width 0.1s; }
+        .meter-line { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--alert); z-index: 2; }
+
+        /* FOOTER */
+        .dock {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95);
+            border-top: 1px solid #222; padding: 15px; display: flex; gap: 10px; z-index: 500;
+            backdrop-filter: blur(10px);
+        }
+        .btn { flex: 1; padding: 15px; border-radius: 4px; font-weight: 800; border: none; cursor: pointer; font-size: 0.9rem; text-transform: uppercase; }
+        .btn-arm { background: var(--gold); color: #000; box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
+        .btn-disarm { background: transparent; border: 1px solid var(--alert); color: var(--alert); display: none; }
+        .btn-panic { flex: 0.3; background: var(--alert); color: #fff; font-weight: 900; }
 
         /* SETTINGS */
-        #settings-modal { position:fixed; bottom:0; left:0; width:100%; background:#161616; border-top:2px solid var(--gold); padding:25px; z-index:2000; transform:translateY(100%); transition:0.3s; }
-        #settings-modal.open { transform:translateY(0); }
-        input[type=range] { width:100%; margin:20px 0; accent-color:var(--gold); background:#333; height:4px; border-radius:2px; -webkit-appearance:none; }
+        #settings-modal { position: fixed; bottom: 0; left: 0; width: 100%; background: #161616; border-top: 2px solid var(--gold); padding: 25px; z-index: 2000; transform: translateY(100%); transition: 0.3s; }
+        #settings-modal.open { transform: translateY(0); }
+        input[type=range] { width: 100%; margin: 20px 0; accent-color: var(--gold); background: #333; height: 4px; border-radius: 2px; -webkit-appearance: none; }
 
-        #strobe { position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; display:none; pointer-events:none; background:#fff; }
-        video { position:fixed; top:-9999px; }
-        @keyframes flash { 0%,100%{background:rgba(50,0,0,0.5);} 50%{background:rgba(255,0,0,0.2);} }
-        @keyframes fade { from{opacity:0} to{opacity:1} }
+        /* UTILS */
+        #strobe { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: none; pointer-events: none; background: #fff; }
+        video { position: fixed; top: -9999px; }
+        @keyframes flash { 0%, 100% { background: rgba(50,0,0,0.5); } 50% { background: rgba(255,0,0,0.2); } }
+        @keyframes fade { from {opacity:0} to {opacity:1} }
     </style>
 </head>
 <body>
@@ -104,38 +178,44 @@
 
     <div id="auth-screen">
         <div class="auth-brand">ECHO:ONE</div>
-        <p style="color:#666; margin-bottom:40px; font-size:0.8rem;">TACTICAL DEFENSE SUITE</p>
+        <div class="auth-copy">By Justin White | FormFlux.AI</div>
         
-        <button class="login-btn" onclick="safeLogin('google')">
+        <button class="login-btn" onclick="backend.login('google')">
             <span style="color:#4285F4; font-weight:900;">G</span> LOGIN WITH GOOGLE
         </button>
-        <button class="login-btn" onclick="safeLogin('guest')" style="background:transparent; color:#666; border:none;">
+        <button class="login-btn" onclick="backend.login('guest')" style="background:transparent; color:#666; border:none;">
             INITIALIZE AS GUEST
         </button>
-        
-        <div style="margin-top:20px; color:#333; font-size:0.6rem;" id="boot-status">SYSTEM READY</div>
+
+        <div class="legal-notice">
+            COPYRIGHT © 2026 JUSTIN WHITE. ALL RIGHTS RESERVED.<br>
+            DISCLAIMER: This tool does not replace 911 services. Use at own risk.
+        </div>
     </div>
 
     <header>
-        <div class="app-logo">ECHO:ONE</div>
+        <div class="app-logo"><i class="material-icons" style="font-size:1rem; vertical-align:middle;">security</i> ECHO:ONE</div>
         <div class="status-badge" id="sys-status">OFFLINE</div>
     </header>
 
-    <div class="tabs">
-        <div class="tab active" onclick="ui.tab('dash')" id="tab-dash">PROTOCOLS</div>
-        <div class="tab" onclick="ui.tab('map')" id="tab-map">MAP</div>
-        <div class="tab" onclick="ui.tab('logs')" id="tab-logs">INTEL</div>
+    <div style="display:flex; border-bottom:1px solid #222; background:#000;">
+        <div onclick="ui.tab('dash')" style="flex:1; padding:15px; text-align:center; color:var(--gold); border-bottom:2px solid var(--gold); font-size:0.8rem; font-weight:bold; cursor:pointer;">PROTOCOLS</div>
+        <div onclick="ui.tab('map')" style="flex:1; padding:15px; text-align:center; color:#666; font-size:0.8rem; font-weight:bold; cursor:pointer;">TACTICAL MAP</div>
+        <div onclick="ui.tab('logs')" style="flex:1; padding:15px; text-align:center; color:#666; font-size:0.8rem; font-weight:bold; cursor:pointer;">INTEL</div>
     </div>
 
     <div id="content">
         <div id="view-dash" class="view active">
             <div id="module-container"></div>
         </div>
+
         <div id="view-map" class="view">
-            <div id="map-el" style="width:100%; height:60vh; background:#111; border-radius:4px;"></div>
+            <div id="map-el"></div>
         </div>
+
         <div id="view-logs" class="view">
-            <div id="log-list" style="font-family:monospace; font-size:0.7rem; color:#aaa;"></div>
+            <button style="width:100%; padding:12px; background:#222; border:1px solid #333; color:var(--gold); font-weight:bold; margin-bottom:15px; cursor:pointer;" onclick="logger.export()">EXPORT DATA TO FORMFLUX</button>
+            <div id="log-list"></div>
         </div>
     </div>
 
@@ -149,256 +229,222 @@
 
     <div class="dock">
         <button class="btn btn-panic" onclick="alarm.panic()">SOS</button>
-        <button id="btn-arm" class="btn btn-arm" onclick="window.sys.arm()">ENGAGE</button>
-        <button id="btn-disarm" class="btn btn-disarm" onclick="window.sys.disarm()">STAND DOWN</button>
+        <button id="btn-arm" class="btn btn-arm" onclick="sys.arm()">ENGAGE PROTOCOLS</button>
+        <button id="btn-disarm" class="btn btn-disarm" onclick="sys.disarm()">STAND DOWN</button>
     </div>
 
     <video id="cam" autoplay playsinline muted></video>
     <canvas id="cvs" style="display:none;"></canvas>
 
-    <script>
-        // 1. CONFIG
-        const MODULES = [
-            { id: 'audio',    name: 'AUDIO SENTINEL', desc: 'Gunshot / Glass Break', icon: 'graphic_eq', thresh: 70 },
-            { id: 'seismic',  name: 'SEISMIC GUARD',  desc: 'Structural Vibration',  icon: 'vibration',  thresh: 25 },
-            { id: 'lumen',    name: 'LUMEN TRAP',     desc: 'Light Change Detect',   icon: 'light_mode', thresh: 60 },
-            { id: 'intruder', name: 'INTRUDER CAM',   desc: 'Motion + Strobe',       icon: 'videocam',   thresh: 20 },
-            { id: 'snoop',    name: 'SNOOP DETECT',   desc: 'Device Handling',       icon: 'touch_app',  thresh: 15 },
-            { id: 'wreck',    name: 'IMPACT MONITOR', desc: 'G-Force > 4G',          icon: 'car_crash',  thresh: 50 },
-            { id: 'net',      name: 'NET-SENTRY',     desc: 'Anti-Jammer',           icon: 'wifi_off',   thresh: 0 },
-            { id: 'velocity', name: 'VELOCITY LOCK',  desc: 'Anti-Abduction',        icon: 'speed',      thresh: 15 },
-            { id: 'geo',      name: 'PERIMETER',      desc: '50m Geofence',          icon: 'radar',      thresh: 50 },
-            { id: 'deadman',  name: 'DEAD MAN',       desc: 'Safety Timer',          icon: 'timer',      thresh: 5 },
-            { id: 'mag',      name: 'MAG-FIELD',      desc: 'Metal Detection',       icon: 'explore',    thresh: 60 }
-        ];
+<script>
+/** ECHO: ONE - CORE ENGINE */
 
-        const state = { mods: {}, vals: {}, base: {} };
-        MODULES.forEach(m => { state.mods[m.id] = { selected: false, active: false, thresh: m.thresh }; state.vals[m.id] = 0; });
+const MODULES = [
+    { id: 'audio',    name: 'AUDIO SENTINEL', desc: 'Gunshot / Glass Break', icon: 'graphic_eq', thresh: 70 },
+    { id: 'seismic',  name: 'SEISMIC GUARD',  desc: 'Structural Vibration',  icon: 'vibration',  thresh: 25 },
+    { id: 'lumen',    name: 'LUMEN TRAP',     desc: 'Light Change Detect',   icon: 'light_mode', thresh: 60 },
+    { id: 'intruder', name: 'INTRUDER CAM',   desc: 'Motion + Strobe',       icon: 'videocam',   thresh: 20 },
+    { id: 'snoop',    name: 'SNOOP DETECT',   desc: 'Device Handling',       icon: 'touch_app',  thresh: 15 },
+    { id: 'wreck',    name: 'IMPACT MONITOR', desc: 'G-Force > 4G',          icon: 'car_crash',  thresh: 50 },
+    { id: 'net',      name: 'NET-SENTRY',     desc: 'Anti-Jammer',           icon: 'wifi_off',   thresh: 0 },
+    { id: 'velocity', name: 'VELOCITY LOCK',  desc: 'Anti-Abduction',        icon: 'speed',      thresh: 15 },
+    { id: 'geo',      name: 'PERIMETER',      desc: '50m Geofence',          icon: 'radar',      thresh: 50 },
+    { id: 'deadman',  name: 'DEAD MAN',       desc: 'Safety Timer (5min)',   icon: 'timer',      thresh: 5 },
+    { id: 'mag',      name: 'MAG-FIELD',      desc: 'Metal Detection',       icon: 'explore',    thresh: 60 }
+];
 
-        // 2. UI
-        const ui = {
-            cur: null,
-            render: () => {
-                const c = document.getElementById('module-container');
-                c.innerHTML = '';
-                MODULES.forEach(m => {
-                    const st = state.mods[m.id];
-                    const cls = st.active ? 'armed' : (st.selected ? 'selected' : '');
-                    c.innerHTML += `
-                    <div class="mod-card ${cls}" id="card-${m.id}" onclick="ui.toggle('${m.id}')">
-                        <i class="material-icons mod-icon">${m.icon}</i>
-                        <div class="mod-text">
-                            <div class="mod-title">${m.name}</div>
-                            <div class="mod-desc">${m.desc}</div>
-                            <div class="meter"><div class="meter-line" style="left:${st.thresh}%"></div><div class="meter-fill" id="bar-${m.id}"></div></div>
-                        </div>
-                        <i class="material-icons" style="color:#666; cursor:pointer; padding:10px;" onclick="ui.settings('${m.id}', event)">settings</i>
-                    </div>`;
-                });
-            },
-            toggle: (id) => {
-                state.mods[id].selected = !state.mods[id].selected;
-                ui.render();
-            },
-            tab: (id) => {
-                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.getElementById(`view-${id}`).classList.add('active');
-                if(id==='map') setTimeout(()=>window.mapSys.map.invalidateSize(), 200);
-            },
-            updateMeters: () => MODULES.forEach(m => {
-                const el = document.getElementById(`bar-${m.id}`);
-                if(el) el.style.width = state.vals[m.id] + "%";
-            }),
-            settings: (id, e) => {
-                e.stopPropagation();
-                ui.cur = id;
-                const m = MODULES.find(x => x.id === id);
-                const st = state.mods[id];
-                document.getElementById('set-title').innerText = m.name;
-                document.getElementById('set-body').innerHTML = `
-                    <label style="color:#aaa; font-size:0.8rem">THRESHOLD: <span id="lbl-val">${st.thresh}</span></label>
-                    <input type="range" min="1" max="100" value="${st.thresh}" oninput="ui.save(this.value)">`;
-                document.getElementById('settings-modal').classList.add('open');
-            },
-            save: (val) => {
-                state.mods[ui.cur].thresh = parseInt(val);
-                document.getElementById('lbl-val').innerText = val;
-                ui.render();
-            },
-            closeSettings: () => document.getElementById('settings-modal').classList.remove('open')
-        };
+const state = { mods: {}, vals: {}, base: {} };
+MODULES.forEach(m => { state.mods[m.id] = { selected: false, active: false, thresh: m.thresh }; state.vals[m.id] = 0; });
 
-        // 3. HARDWARE (ATTACHED TO WINDOW FOR SAFETY)
-        window.sys = {
-            ctx: null, stream: null, analyser: null,
-            init: async () => {
-                ui.render();
-                try {
-                    window.sys.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    try {
-                        window.sys.stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:true});
-                    } catch(e) {
-                        window.sys.stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
-                    }
-                    document.getElementById('cam').srcObject = window.sys.stream;
-                    window.sys.analyser = window.sys.ctx.createAnalyser();
-                    window.sys.ctx.createMediaStreamSource(window.sys.stream).connect(window.sys.analyser);
-                    
-                    if(typeof DeviceMotionEvent.requestPermission==='function') await DeviceMotionEvent.requestPermission();
-                    
-                    window.mapSys.init();
-                    requestAnimationFrame(window.sys.visLoop);
-                    window.addEventListener('devicemotion', window.sys.motLoop);
-                    navigator.geolocation.watchPosition(window.mapSys.update, null, {enableHighAccuracy:true});
-                    window.addEventListener('offline', () => { if(state.mods.net.active) window.alarm.trigger('net'); });
-                    
-                } catch(e) { console.error(e); alert("Sensors Blocked. Use HTTPS."); }
-            },
-            arm: () => {
-                let cnt = 0;
-                MODULES.forEach(m => {
-                    if(state.mods[m.id].selected) {
-                        state.mods[m.id].active = true;
-                        cnt++;
-                        if(m.id==='seismic') state.base.acc = null;
-                        if(m.id==='geo') state.base.geo = window.mapSys.pos;
-                        if(m.id==='lumen') setTimeout(()=>state.mods.lumen.ready=true, 3000);
-                    }
-                });
-                if(cnt===0) return alert("Select Protocols.");
-                if(window.sys.ctx.state==='suspended') window.sys.ctx.resume();
-                document.getElementById('btn-arm').style.display='none';
-                document.getElementById('btn-disarm').style.display='block';
-                document.getElementById('sys-status').innerText="SYSTEM ARMED";
-                document.getElementById('sys-status').classList.add('active');
-                ui.render();
-            },
-            disarm: () => {
-                MODULES.forEach(m => state.mods[m.id].active = false);
-                document.getElementById('btn-arm').style.display='block';
-                document.getElementById('btn-disarm').style.display='none';
-                document.getElementById('sys-status').innerText="OFFLINE";
-                document.getElementById('sys-status').classList.remove('active');
-                document.getElementById('strobe').style.display='none';
-                ui.render();
-            },
-            visLoop: () => {
-                requestAnimationFrame(window.sys.visLoop);
-                if(!window.sys.stream) return;
-                const cvs = document.getElementById('cvs');
-                const ctx = cvs.getContext('2d');
-                const vid = document.getElementById('cam');
-                if(vid.readyState === vid.HAVE_ENOUGH_DATA) {
-                    cvs.width=40; cvs.height=40;
-                    ctx.drawImage(vid,0,0,40,40);
-                    const d = ctx.getImageData(0,0,40,40).data;
-                    let sum=0; for(let i=0; i<d.length; i+=4) sum+=d[i];
-                    const avg = Math.floor(sum/1600);
-                    
-                    state.vals.lumen = (avg/255)*100;
-                    const delta = Math.abs(avg - (state.base.light||avg));
-                    state.vals.intruder = Math.min(delta*10, 100);
-                    
-                    if(state.mods.lumen.active && state.mods.lumen.ready && state.vals.lumen > state.mods.lumen.thresh) window.alarm.trigger('lumen');
-                    if(state.mods.intruder.active && state.vals.intruder > state.mods.intruder.thresh) window.alarm.trigger('intruder');
-                    state.base.light = avg;
-                }
-                if(window.sys.analyser) {
-                    const d = new Uint8Array(window.sys.analyser.frequencyBinCount);
-                    window.sys.analyser.getByteFrequencyData(d);
-                    const v = d.reduce((a,b)=>a+b)/d.length;
-                    state.vals.audio = (v/255)*100;
-                    if(state.mods.audio.active && state.vals.audio > state.mods.audio.thresh) window.alarm.trigger('audio');
-                }
-                ui.updateMeters();
-            },
-            motLoop: (e) => {
-                const acc = e.accelerationIncludingGravity;
-                if(!acc) return;
-                if(!state.base.acc) state.base.acc = acc;
-                const diff = Math.abs(acc.x-state.base.acc.x) + Math.abs(acc.y-state.base.acc.y);
-                const g = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2) / 9.8;
-                
-                state.vals.seismic = Math.min(diff*50, 100);
-                state.vals.snoop = Math.min(diff*20, 100);
-                state.vals.wreck = ((g-1)/4)*100;
-                
-                if(state.mods.seismic.active && state.vals.seismic > state.mods.seismic.thresh) window.alarm.trigger('seismic');
-                if(state.mods.snoop.active && state.vals.snoop > state.mods.snoop.thresh) window.alarm.trigger('snoop');
-                if(state.mods.wreck.active && state.vals.wreck > state.mods.wreck.thresh) window.alarm.trigger('wreck');
-                
-                state.base.acc.x += (acc.x-state.base.acc.x)*0.05;
-                state.base.acc.y += (acc.y-state.base.acc.y)*0.05;
+const ui = {
+    loginSuccess: (user) => {
+        document.getElementById('auth-screen').style.opacity = 0;
+        setTimeout(() => {
+            document.getElementById('auth-screen').style.display = 'none';
+            sys.init(); 
+        }, 500);
+        const name = user.isAnonymous ? 'GUEST OP' : 'OPERATOR';
+        document.getElementById('sys-status').innerText = name + " ONLINE";
+        logger.add("SYSTEM", `AUTHORIZED: ${name}`);
+    },
+    render: () => {
+        const c = document.getElementById('module-container');
+        c.innerHTML = '';
+        MODULES.forEach(m => {
+            const st = state.mods[m.id];
+            const cls = st.active ? 'armed' : (st.selected ? 'selected' : '');
+            c.innerHTML += `
+            <div class="mod-card ${cls}" id="card-${m.id}" onclick="ui.toggle('${m.id}')">
+                <i class="material-icons mod-icon">${m.icon}</i>
+                <div class="mod-text">
+                    <div class="mod-title">${m.name}</div>
+                    <div class="mod-desc">${m.desc}</div>
+                    <div class="meter"><div class="meter-line" style="left:${st.thresh}%"></div><div class="meter-fill" id="bar-${m.id}"></div></div>
+                </div>
+                <i class="material-icons" style="color:${st.selected? 'var(--gold)' : '#333'}" onclick="ui.settings('${m.id}', event)">settings</i>
+            </div>`;
+        });
+    },
+    toggle: (id) => { state.mods[id].selected = !state.mods[id].selected; ui.render(); },
+    tab: (id) => {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(`view-${id}`).classList.add('active');
+        if(id === 'map') setTimeout(() => mapSys.map.invalidateSize(), 200);
+    },
+    updateMeters: () => MODULES.forEach(m => {
+        const el = document.getElementById(`bar-${m.id}`);
+        if(el) el.style.width = state.vals[m.id] + "%";
+    }),
+    settings: (id, e) => {
+        e.stopPropagation();
+        ui.cur = id;
+        const st = state.mods[id];
+        document.getElementById('set-title').innerText = MODULES.find(x=>x.id===id).name;
+        document.getElementById('set-body').innerHTML = `
+            <label style="color:#aaa; font-size:0.8rem">SENSITIVITY / THRESHOLD: <span id="lbl-val">${st.thresh}</span></label>
+            <input type="range" min="1" max="100" value="${st.thresh}" oninput="ui.save(this.value)">`;
+        document.getElementById('settings-modal').classList.add('open');
+    },
+    save: (val) => {
+        state.mods[ui.cur].thresh = parseInt(val);
+        document.getElementById('lbl-val').innerText = val;
+        ui.render();
+    },
+    closeSettings: () => document.getElementById('settings-modal').classList.remove('open')
+};
+
+const sys = {
+    ctx: null, stream: null, analyser: null,
+    init: async () => {
+        ui.render();
+        try {
+            sys.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            try { sys.stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:true}); }
+            catch(e) { sys.stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true}); }
+            document.getElementById('cam').srcObject = sys.stream;
+            sys.analyser = sys.ctx.createAnalyser();
+            sys.ctx.createMediaStreamSource(sys.stream).connect(sys.analyser);
+            if(typeof DeviceMotionEvent.requestPermission==='function') await DeviceMotionEvent.requestPermission();
+            
+            mapSys.init();
+            requestAnimationFrame(sys.visLoop);
+            window.addEventListener('devicemotion', sys.motLoop);
+            navigator.geolocation.watchPosition(mapSys.update, null, {enableHighAccuracy:true});
+            window.addEventListener('offline', () => { if(state.mods.net.active) alarm.trigger('net'); });
+        } catch(e) { console.error(e); }
+    },
+    arm: () => {
+        let cnt = 0;
+        MODULES.forEach(m => {
+            if(state.mods[m.id].selected) {
+                state.mods[m.id].active = true;
+                cnt++;
+                if(m.id==='seismic') state.base.acc = null;
+                if(m.id==='geo') state.base.geo = mapSys.pos;
+                if(m.id==='lumen') setTimeout(()=>state.mods.lumen.ready=true, 3000);
             }
-        };
-
-        // 4. MAP
-        window.mapSys = {
-            init: () => {
-                try {
-                    window.mapSys.map = L.map('map-el').setView([0,0], 13);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(window.mapSys.map);
-                    window.mapSys.usr = L.circleMarker([0,0], {color:'#00f3ff'}).addTo(window.mapSys.map);
-                } catch(e){}
-            },
-            update: (pos) => {
-                const lat = pos.coords.latitude; const lng = pos.coords.longitude;
-                window.mapSys.pos = [lat, lng];
-                const spd = (pos.coords.speed||0)*2.237;
-                state.vals.velocity = spd;
-                if(window.mapSys.map) { window.mapSys.usr.setLatLng([lat, lng]); if(!window.mapSys.threat) window.mapSys.map.setView([lat, lng], 15); }
-                if(state.mods.velocity.active && spd > state.mods.velocity.thresh) window.alarm.trigger('velocity');
-                if(state.mods.geo.active && state.base.geo) {
-                    const d = window.mapSys.dist(lat, lng, state.base.geo[0], state.base.geo[1]);
-                    if(d > state.mods.geo.thresh) window.alarm.trigger('geo');
-                }
-            },
-            dist: (lat1, lon1, lat2, lon2) => {
-                const R=6371e3; const p1=lat1*Math.PI/180, p2=lat2*Math.PI/180;
-                const dp=(lat2-lat1)*Math.PI/180, dl=(lon2-lon1)*Math.PI/180;
-                const a=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
-                return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-            }
-        };
-
-        // 5. ALARM
-        window.alarm = {
-            trigger: (id) => {
-                const c = document.getElementById(`card-${id}`);
-                if(c.classList.contains('triggered')) return;
-                c.classList.add('triggered');
-                
-                if(window.sys.ctx) {
-                    const o = window.sys.ctx.createOscillator(); o.connect(window.sys.ctx.destination);
-                    o.type='sawtooth'; o.frequency.setValueAtTime(600, window.sys.ctx.currentTime);
-                    o.frequency.linearRampToValueAtTime(1000, window.sys.ctx.currentTime+0.5);
-                    o.start(); o.stop(window.sys.ctx.currentTime+1);
-                }
-                
-                if(id==='intruder' || id==='audio') {
-                    const s = document.getElementById('strobe');
-                    s.style.display='block'; s.style.animation='flash 0.1s infinite';
-                    setTimeout(()=>{s.style.display='none';s.style.animation='none'}, 4000);
-                }
-                window.logger.add(MODULES.find(m=>m.id===id).name, "TRIGGERED");
-                setTimeout(()=>c.classList.remove('triggered'), 3000);
-            },
-            panic: () => { window.alarm.trigger('audio'); alert("PANIC BEACON SENT"); }
-        };
-
-        window.logger = {
-            add: (mod, msg) => {
-                const t = new Date().toLocaleTimeString();
-                document.getElementById('log-list').innerHTML = `<div style="padding:5px; border-bottom:1px solid #222;">[${t}] ${mod}: ${msg}</div>` + document.getElementById('log-list').innerHTML;
-            },
-            export: () => { alert("Exporting to FormFlux Cloud..."); }
-        };
+        });
+        if(cnt===0) return alert("Select Protocols.");
+        if(sys.ctx.state==='suspended') sys.ctx.resume();
+        document.getElementById('btn-arm').style.display='none';
+        document.getElementById('btn-disarm').style.display='block';
+        ui.render();
+    },
+    disarm: () => {
+        MODULES.forEach(m => state.mods[m.id].active = false);
+        document.getElementById('btn-arm').style.display='block';
+        document.getElementById('btn-disarm').style.display='none';
+        document.getElementById('strobe').style.display='none';
+        ui.render();
+    },
+    visLoop: () => {
+        requestAnimationFrame(sys.visLoop);
+        if(!sys.stream) return;
+        const cvs = document.getElementById('cvs'); const ctx = cvs.getContext('2d'); const vid = document.getElementById('cam');
+        if(vid.readyState === vid.HAVE_ENOUGH_DATA) {
+            cvs.width=40; cvs.height=40; ctx.drawImage(vid,0,0,40,40);
+            const d = ctx.getImageData(0,0,40,40).data;
+            let sum=0; for(let i=0; i<d.length; i+=4) sum+=d[i];
+            const avg = Math.floor(sum/1600);
+            state.vals.lumen = (avg/255)*100;
+            state.vals.intruder = Math.min(Math.abs(avg-(state.base.light||avg))*10, 100);
+            if(state.mods.lumen.active && state.mods.lumen.ready && state.vals.lumen > state.mods.lumen.thresh) alarm.trigger('lumen');
+            if(state.mods.intruder.active && state.vals.intruder > state.mods.intruder.thresh) alarm.trigger('intruder');
+            state.base.light = avg;
+        }
+        if(sys.analyser) {
+            const d = new Uint8Array(sys.analyser.frequencyBinCount); sys.analyser.getByteFrequencyData(d);
+            state.vals.audio = (d.reduce((a,b)=>a+b)/d.length/255)*100;
+            if(state.mods.audio.active && state.vals.audio > state.mods.audio.thresh) alarm.trigger('audio');
+        }
+        ui.updateMeters();
+    },
+    motLoop: (e) => {
+        const acc = e.accelerationIncludingGravity; if(!acc) return;
+        if(!state.base.acc) state.base.acc = acc;
+        const diff = Math.abs(acc.x-state.base.acc.x) + Math.abs(acc.y-state.base.acc.y);
+        state.vals.seismic = Math.min(diff*50, 100);
+        state.vals.snoop = Math.min(diff*20, 100);
+        state.vals.wreck = ((Math.sqrt(acc.x**2+acc.y**2+acc.z**2)/9.8-1)/4)*100;
         
-        // BOOT CHECK
-        console.log("ECHO: ONE CORE LOADED");
-        document.getElementById('boot-status').innerText = "CORE LOADED - READY";
-        document.getElementById('boot-status').style.color = "var(--gold)";
-    </script>
+        if(state.mods.seismic.active && state.vals.seismic > state.mods.seismic.thresh) alarm.trigger('seismic');
+        if(state.mods.snoop.active && state.vals.snoop > state.mods.snoop.thresh) alarm.trigger('snoop');
+        if(state.mods.wreck.active && state.vals.wreck > state.mods.wreck.thresh) alarm.trigger('wreck');
+        
+        state.base.acc.x += (acc.x-state.base.acc.x)*0.05; state.base.acc.y += (acc.y-state.base.acc.y)*0.05;
+    }
+};
+
+const mapSys = {
+    init: () => { try { mapSys.map = L.map('map-el').setView([0,0], 13); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mapSys.map); mapSys.usr = L.circleMarker([0,0], {color:'#00f3ff'}).addTo(mapSys.map); } catch(e){} },
+    update: (pos) => {
+        const lat = pos.coords.latitude; const lng = pos.coords.longitude; mapSys.pos = [lat, lng];
+        state.vals.velocity = (pos.coords.speed||0)*2.237;
+        if(mapSys.map) { mapSys.usr.setLatLng([lat, lng]); if(!mapSys.threat) mapSys.map.setView([lat, lng], 15); }
+        if(state.mods.velocity.active && state.vals.velocity > state.mods.velocity.thresh) alarm.trigger('velocity');
+        if(state.mods.geo.active && state.base.geo) {
+            if(mapSys.dist(lat, lng, state.base.geo[0], state.base.geo[1]) > state.mods.geo.thresh) alarm.trigger('geo');
+        }
+    },
+    dist: (lat1, lon1, lat2, lon2) => {
+        const R=6371e3; const p1=lat1*Math.PI/180, p2=lat2*Math.PI/180;
+        const dp=(lat2-lat1)*Math.PI/180, dl=(lon2-lon1)*Math.PI/180;
+        const a=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+        return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+    }
+};
+
+const alarm = {
+    trigger: (id) => {
+        const c = document.getElementById(`card-${id}`);
+        if(c.classList.contains('triggered')) return;
+        c.classList.add('triggered');
+        
+        // VIBRATION + SOUND
+        if(navigator.vibrate) navigator.vibrate([500, 200, 500]);
+        const o = sys.ctx.createOscillator(); o.connect(sys.ctx.destination);
+        o.type='sawtooth'; o.frequency.setValueAtTime(600, sys.ctx.currentTime);
+        o.frequency.linearRampToValueAtTime(1000, sys.ctx.currentTime+0.5);
+        o.start(); o.stop(sys.ctx.currentTime+1);
+        
+        if(id==='intruder' || id==='audio') {
+            const s = document.getElementById('strobe');
+            s.style.display='block'; s.style.animation='flash 0.1s infinite';
+            setTimeout(()=>{s.style.display='none';s.style.animation='none'}, 4000);
+        }
+        window.backend.logEvent(id, state.vals[id].toFixed(2));
+        setTimeout(()=>c.classList.remove('triggered'), 3000);
+    },
+    panic: () => { alarm.trigger('audio'); alert("PANIC BEACON SENT"); }
+};
+
+const logger = {
+    add: (mod, msg) => {
+        const t = new Date().toLocaleTimeString();
+        document.getElementById('log-list').innerHTML = `<div>[${t}] ${mod}: ${msg}</div>` + document.getElementById('log-list').innerHTML;
+    },
+    export: () => alert("Packaging data for FormFlux...")
+};
+</script>
 </body>
 </html>
