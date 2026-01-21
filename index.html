@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VANGUARD SIGMA 7.1</title>
+    <title>VANGUARD OMNI</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -13,100 +13,135 @@
             --neon-blue: #00f3ff;
             --neon-green: #00ff41;
             --neon-red: #ff003c;
+            --neon-amber: #ffaa00;
             --bg: #050505;
-            --panel: #121212;
+            --panel: #141414;
             --border: 1px solid #333;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; font-family: 'Segoe UI', Roboto, sans-serif; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; font-family: 'Segoe UI', Roboto, monospace; }
         
         body { background-color: var(--bg); color: #eee; margin: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-        /* HEADER */
+        /* --- 1. LOGIN --- */
+        #login-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s;
+        }
+        .login-input { width: 80%; padding: 15px; margin: 10px 0; background: #222; border: 1px solid #444; color: white; border-radius: 8px; text-align: center; }
+        .login-btn { width: 80%; padding: 15px; background: var(--neon-blue); font-weight: bold; border: none; border-radius: 8px; margin-top: 20px; }
+
+        /* --- HEADER --- */
         header { padding: 15px; background: rgba(0,0,0,0.95); border-bottom: var(--border); display: flex; justify-content: space-between; align-items: center; z-index: 100; }
-        .brand { color: var(--neon-blue); font-weight: 900; letter-spacing: 1px; }
-        
-        /* VIEWS */
+        .brand { color: var(--neon-blue); font-weight: 900; letter-spacing: 2px; }
+        .nav-btn { color: #888; background: none; border: none; font-size: 1.2rem; cursor: pointer; }
+        .nav-btn.active { color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
+
+        /* --- VIEWS --- */
         #viewport { flex: 1; position: relative; overflow: hidden; }
         .view {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            overflow-y: auto; padding: 15px; padding-bottom: 100px;
+            overflow-y: auto; padding: 15px; padding-bottom: 120px;
             background: var(--bg); transition: transform 0.3s; transform: translateX(100%);
         }
         .view.active { transform: translateX(0); }
 
-        /* GRID */
+        /* --- DASHBOARD GRID --- */
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .card {
-            background: var(--panel); border: var(--border); border-radius: 10px; padding: 15px;
-            display: flex; flex-direction: column; justify-content: space-between; min-height: 120px; position: relative;
+            background: var(--panel); border: var(--border); border-radius: 12px; padding: 15px;
+            display: flex; flex-direction: column; justify-content: space-between; min-height: 110px; position: relative;
+            transition: 0.2s;
         }
-        .card.armed { border-color: var(--neon-green); background: rgba(0, 50, 0, 0.2); }
+        /* State: Selected (Ready to Arm) */
+        .card.selected { border-color: var(--neon-blue); background: rgba(0, 243, 255, 0.1); }
+        /* State: Armed (Active) */
+        .card.armed { border-color: var(--neon-green); background: rgba(0, 50, 0, 0.3); }
+        /* State: Alert (Triggered) */
         .card.alert { border-color: var(--neon-red); background: rgba(50, 0, 0, 0.5); animation: flash 0.5s infinite; }
-        .dot { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; background: #333; border-radius: 50%; }
-        .card.armed .dot { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
-        .icon { font-size: 1.8rem; color: #666; }
-        .card.armed .icon { color: var(--neon-green); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .gear-btn { color: #555; font-size: 1.2rem; z-index: 10; padding: 5px; margin: -5px; }
+        .card.selected .gear-btn, .card.armed .gear-btn { color: #aaa; }
+        
+        .status-dot { width: 8px; height: 8px; background: #333; border-radius: 50%; }
+        .card.armed .status-dot { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
 
-        /* DETAIL CONTROLS */
+        /* --- DETAIL VIEW --- */
         .setting-group { margin: 20px 0; background: #111; padding: 15px; border-radius: 8px; }
         .setting-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: #aaa; margin-bottom: 10px; }
         input[type=range] { width: 100%; background: #333; height: 5px; -webkit-appearance: none; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--neon-blue); border-radius: 50%; }
-        
-        .big-toggle { width: 100%; padding: 20px; background: #222; border: 1px solid #444; color: #fff; font-size: 1.2rem; border-radius: 12px; margin-top: 10px; }
-        .big-toggle.armed { background: var(--neon-green); color: black; border-color: var(--neon-green); }
 
-        /* FOOTER */
-        .footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: #000; border-top: var(--border); display: flex; z-index: 200; padding: 10px; gap: 10px; }
-        .panic-btn { flex: 2; background: var(--neon-red); color: white; border: none; border-radius: 8px; font-weight: 900; letter-spacing: 2px; }
-        .log-btn { flex: 1; background: #222; color: #ccc; border: 1px solid #444; border-radius: 8px; }
+        /* --- LOGS (INTEL) VIEW --- */
+        .log-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .log-table th { text-align: left; color: #666; padding: 5px; border-bottom: 1px solid #333; }
+        .log-table td { padding: 8px 5px; border-bottom: 1px solid #222; color: #ccc; }
+        .log-time { color: var(--neon-blue); font-family: monospace; }
+        .log-alert { color: var(--neon-red); font-weight: bold; }
+
+        /* --- MASTER ARM BAR --- */
+        .master-bar {
+            position: fixed; bottom: 80px; left: 0; width: 100%; padding: 0 15px;
+            pointer-events: none; opacity: 0; transition: 0.3s; transform: translateY(20px); z-index: 90;
+        }
+        .master-bar.visible { opacity: 1; pointer-events: all; transform: translateY(0); }
+        
+        .master-btn {
+            width: 100%; background: var(--neon-blue); color: #000; font-weight: 900;
+            padding: 15px; border: none; border-radius: 50px; font-size: 1rem;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3); text-transform: uppercase;
+        }
+        .master-btn.disarm { background: var(--neon-red); color: white; box-shadow: 0 0 20px rgba(255, 0, 60, 0.3); }
+
+        /* --- FOOTER NAV --- */
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: #000; border-top: var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 200; }
+        .panic-btn { width: 60px; height: 60px; border-radius: 50%; background: var(--neon-red); border: none; color: white; font-weight: bold; box-shadow: 0 0 15px var(--neon-red); margin-top: -30px; }
 
         @keyframes flash { 0%, 100% { border-color: var(--neon-red); } 50% { border-color: #000; } }
         #strobe-layer { position: fixed; top:0; left:0; width:100%; height:100%; z-index:9999; display:none; pointer-events: none; }
         @keyframes strobe { 0% { background: white; } 50% { background: black; } 100% { background: white; } }
+        #map-container { width: 100%; height: 100%; }
     </style>
 </head>
 <body>
 
     <div id="strobe-layer"></div>
 
+    <div id="login-layer">
+        <h1 style="color:var(--neon-blue); letter-spacing:3px;">VANGUARD</h1>
+        <p style="color:#666; font-size:0.8rem; margin-bottom:30px;">OMNI EDITION v8.0</p>
+        <input type="email" class="login-input" placeholder="SECURE ID" id="loginId">
+        <button class="login-btn" onclick="login()">INITIALIZE</button>
+    </div>
+
     <header>
-        <button id="backBtn" onclick="goHome()" style="background:none; border:none; color:white; display:none;"><i class="material-icons">arrow_back</i></button>
         <div class="brand">VANGUARD</div>
-        <div style="font-size: 0.7rem; color: #666;">SIGMA 7.1</div>
+        <div style="font-size:0.7rem; color:var(--neon-green);" id="sys-status">SYSTEM IDLE</div>
     </header>
 
     <div id="viewport">
         <div id="dashboard" class="view active">
-            <div class="grid">
-                <div class="card" id="card-intruder" onclick="openDetail('intruder')">
-                    <div class="dot"></div><i class="material-icons icon">motion_photos_on</i>
-                    <div><h3>Intruder</h3><p>Cam + Strobe</p></div>
+            <div class="grid" id="card-grid">
                 </div>
-                <div class="card" id="card-seismic" onclick="openDetail('seismic')">
-                    <div class="dot"></div><i class="material-icons icon">vibration</i>
-                    <div><h3>Seismic</h3><p>Door Guard</p></div>
-                </div>
-                <div class="card" id="card-lumen" onclick="openDetail('lumen')">
-                    <div class="dot"></div><i class="material-icons icon">light_mode</i>
-                    <div><h3>Lumen</h3><p>Pocket Trap</p></div>
-                </div>
-                <div class="card" id="card-net" onclick="openDetail('net')">
-                    <div class="dot"></div><i class="material-icons icon">wifi_off</i>
-                    <div><h3>Net-Sentry</h3><p>Offline Detect</p></div>
-                </div>
-                <div class="card" id="card-deadman" onclick="openDetail('deadman')">
-                    <div class="dot"></div><i class="material-icons icon">hourglass_bottom</i>
-                    <div><h3>Dead Man</h3><p>Timer</p></div>
-                </div>
-                <div class="card" id="card-wreck" onclick="openDetail('wreck')">
-                    <div class="dot"></div><i class="material-icons icon">car_crash</i>
-                    <div><h3>Wreck</h3><p>Impact</p></div>
-                </div>
+        </div>
+
+        <div id="intel" class="view">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; color:var(--neon-amber);">INTEL LOG</h2>
+                <button onclick="downloadLogs()" style="background:#333; color:white; border:none; padding:8px 12px; border-radius:4px;">DOWNLOAD</button>
             </div>
+            <table class="log-table">
+                <thead><tr><th>TIME</th><th>MODULE</th><th>EVENT</th></tr></thead>
+                <tbody id="log-body"></tbody>
+            </table>
+        </div>
+
+        <div id="map-view" class="view">
+            <div id="map-container"></div>
         </div>
 
         <div id="detail" class="view">
+            <button onclick="nav('dashboard')" style="background:none; border:none; color:#666; margin-bottom:10px;">&larr; BACK</button>
             <h1 id="det-title" style="color:var(--neon-blue); margin:0;">MODULE</h1>
             <p id="det-desc" style="color:#888;">Description</p>
 
@@ -114,20 +149,23 @@
                 <div class="setting-label"><span>SENSITIVITY</span><span id="lbl-sens">50%</span></div>
                 <input type="range" id="inp-sens" min="1" max="100" value="50" oninput="updSet('sens', this.value)">
             </div>
+            
+            <div class="setting-group" id="grp-timer" style="display:none;">
+                <div class="setting-label"><span>TIMER</span><span id="lbl-timer">5 MIN</span></div>
+                <input type="range" min="1" max="60" value="5" oninput="updSet('timer', this.value)">
+            </div>
+            
+            <div class="setting-group" id="grp-radius" style="display:none;">
+                <div class="setting-label"><span>RADIUS</span><span id="lbl-radius">50 M</span></div>
+                <input type="range" min="10" max="500" value="50" step="10" oninput="updSet('radius', this.value)">
+            </div>
 
             <div class="setting-group" id="grp-strobe" style="display:none;">
-                <div class="setting-label"><span>COUNTER-MEASURE</span></div>
                 <label style="display:flex; align-items:center; gap:10px;">
-                    <input type="checkbox" id="chk-strobe" onchange="mods.intruder.strobe = this.checked"> 
+                    <input type="checkbox" id="chk-strobe" onchange="toggleStrobeOpt()"> 
                     Enable Blinding Strobe
                 </label>
             </div>
-
-            <div id="net-instruction" style="display:none; color: var(--neon-blue); font-size: 0.8rem; margin: 10px 0;">
-                TESTING: Arm this module, then enable AIRPLANE MODE to trigger alarm.
-            </div>
-
-            <button class="big-toggle" id="arm-btn" onclick="toggleArm()">ARM MODULE</button>
 
             <div style="background:#111; padding:15px; border-radius:8px; margin-top:20px;">
                 <label style="font-size:0.7rem; color:#555;">LIVE SENSOR DATA</label>
@@ -136,37 +174,53 @@
         </div>
     </div>
 
+    <div class="master-bar" id="master-bar">
+        <button class="master-btn" id="master-btn" onclick="executeMasterAction()">ARM SELECTED</button>
+    </div>
+
     <div class="footer">
-        <button class="panic-btn" onclick="panic()">PANIC</button>
-        <button class="log-btn" onclick="downloadLogs()"><i class="material-icons">download</i></button>
+        <button class="nav-btn active" onclick="nav('dashboard')"><i class="material-icons">grid_view</i></button>
+        <button class="panic-btn" onclick="panic()"><i class="material-icons">priority_high</i></button>
+        <button class="nav-btn" onclick="nav('map-view')"><i class="material-icons">map</i></button>
+        <button class="nav-btn" onclick="nav('intel')"><i class="material-icons">history</i></button>
     </div>
 
     <video id="cam" autoplay playsinline muted style="position:fixed; top:-5000px;"></video>
     <canvas id="cvs" style="display:none;"></canvas>
 
 <script>
-    // --- STATE ---
+    // --- 1. CONFIGURATION ---
     const mods = {
-        intruder: { name:"Intruder", desc:"Visual Motion", armed:false, sens:50, strobe:false },
-        seismic: { name:"Seismic", desc:"Detects vibrations. Place on door handle or floor.", armed:false, sens:85 },
-        lumen: { name:"Lumen", desc:"Alarms when removed from dark pocket/bag.", armed:false, sens:50, ready:false },
-        net: { name:"Net-Sentry", desc:"Alarms if Internet/Wi-Fi is cut.", armed:false, sens:null },
-        deadman: { name:"Dead Man", desc:"Safety Timer", armed:false, timer:5 },
-        wreck: { name:"Wreck", desc:"Impact G-Force", armed:false, sens:40 }
+        intruder: { id:'intruder', icon:'motion_photos_on', name:"Intruder", desc:"Visual Motion + Strobe", armed:false, selected:false, sens:50, strobe:false },
+        seismic:  { id:'seismic', icon:'vibration', name:"Seismic", desc:"Door/Floor Vibration", armed:false, selected:false, sens:85, base:null },
+        lumen:    { id:'lumen', icon:'light_mode', name:"Lumen", desc:"Pocket/Bag Trap", armed:false, selected:false, sens:50, ready:false },
+        net:      { id:'net', icon:'wifi_off', name:"Net-Sentry", desc:"Anti-Jammer/Offline", armed:false, selected:false },
+        velocity: { id:'velocity', icon:'speed', name:"Velocity", desc:"Anti-Abduction (>15mph)", armed:false, selected:false },
+        audio:    { id:'audio', icon:'graphic_eq', name:"Audio", desc:"Gunshot/Glass Break", armed:false, selected:false, sens:70 },
+        deadman:  { id:'deadman', icon:'hourglass_bottom', name:"Dead Man", desc:"Safety Timer", armed:false, selected:false, timer:5, current:0 },
+        geo:      { id:'geo', icon:'share_location', name:"Perimeter", desc:"GPS Geofence", armed:false, selected:false, radius:50, start:null },
+        snoop:    { id:'snoop', icon:'touch_app', name:"Snoop", desc:"Device Tilt", armed:false, selected:false, sens:90 },
+        wreck:    { id:'wreck', icon:'car_crash', name:"Wreck", desc:"Impact G-Force", armed:false, selected:false, sens:40 }
     };
 
-    let curMod = null;
-    let stream, audioCtx;
+    let stream, audioCtx, analyser;
     let logs = [];
-    let lastLight = 0;
-    let accBase = null;
-    let netCheckInt = null;
+    let map, usrMarker, threatMarker;
+    let lastLat, lastLng, lastLight=0, accBase=null, netInt=null, dmInt=null;
+    let detailMod = null; // The module currently being edited
 
-    // --- INIT ---
-    // Start automatically on click
-    document.body.addEventListener('click', initSys, { once: true });
+    // --- 2. INITIALIZATION ---
+    function login() {
+        if(!document.getElementById('loginId').value) return alert("ID Required");
+        document.getElementById('login-layer').style.opacity=0;
+        setTimeout(()=>{ 
+            document.getElementById('login-layer').style.display='none';
+            initSys();
+        }, 500);
+    }
 
     async function initSys() {
+        renderGrid();
         try {
             stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:true});
             document.getElementById('cam').srcObject = stream;
@@ -174,122 +228,156 @@
             if(typeof DeviceMotionEvent.requestPermission==='function') await DeviceMotionEvent.requestPermission();
             
             audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-
-            // Start Loops
-            requestAnimationFrame(visLoop);
             
-            // Network Listener
+            // Map
+            map = L.map('map-container').setView([0,0], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            usrMarker = L.circleMarker([0,0], {color: '#00f3ff'}).addTo(map);
+
+            // Loops
+            requestAnimationFrame(visLoop);
+            navigator.geolocation.watchPosition(updateGPS, null, {enableHighAccuracy:true});
             window.addEventListener('offline', () => { if(mods.net.armed) trigger('net'); });
 
         } catch(e) { console.log(e); }
     }
 
-    // --- UI NAVIGATION ---
-    function goHome() {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById('dashboard').classList.add('active');
-        document.getElementById('backBtn').style.display='none';
-        curMod = null;
+    function renderGrid() {
+        const grid = document.getElementById('card-grid');
+        grid.innerHTML = '';
+        Object.values(mods).forEach(m => {
+            const card = document.createElement('div');
+            card.className = `card ${m.selected ? 'selected' : ''} ${m.armed ? 'armed' : ''}`;
+            card.id = `card-${m.id}`;
+            card.onclick = (e) => toggleSelect(m.id, e);
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="status-dot"></div>
+                    <i class="material-icons gear-btn" onclick="openDetail('${m.id}', event)">settings</i>
+                </div>
+                <i class="material-icons icon">${m.icon}</i>
+                <div><h3>${m.name}</h3><p>${m.desc}</p></div>
+            `;
+            grid.appendChild(card);
+        });
+        updateMasterBar();
     }
 
-    function openDetail(key) {
-        curMod = key;
-        const m = mods[key];
+    // --- 3. INTERACTION ---
+    function toggleSelect(id, e) {
+        if(e) e.stopPropagation();
+        mods[id].selected = !mods[id].selected;
+        renderGrid();
+    }
+
+    function openDetail(id, e) {
+        if(e) e.stopPropagation();
+        detailMod = id;
+        const m = mods[id];
+        
         document.getElementById('det-title').innerText = m.name;
         document.getElementById('det-desc').innerText = m.desc;
         
-        // UI Toggles
-        document.getElementById('grp-sens').style.display = (key==='net' || key==='deadman') ? 'none' : 'block';
-        document.getElementById('grp-strobe').style.display = (key==='intruder') ? 'block' : 'none';
-        document.getElementById('net-instruction').style.display = (key==='net') ? 'block' : 'none';
+        // Settings Visibility
+        document.getElementById('grp-sens').style.display = (id==='net'||id==='velocity'||id==='deadman'||id==='geo') ? 'none' : 'block';
+        document.getElementById('grp-timer').style.display = id==='deadman' ? 'block' : 'none';
+        document.getElementById('grp-radius').style.display = id==='geo' ? 'block' : 'none';
+        document.getElementById('grp-strobe').style.display = id==='intruder' ? 'block' : 'none';
 
-        if(key !== 'net' && key !== 'deadman') {
-            document.getElementById('inp-sens').value = m.sens;
-            document.getElementById('lbl-sens').innerText = m.sens + "%";
-        }
+        if(m.sens) { document.getElementById('inp-sens').value = m.sens; document.getElementById('lbl-sens').innerText = m.sens+"%"; }
+        if(id==='deadman') document.getElementById('lbl-timer').innerText = m.timer+" MIN";
+        if(id==='geo') document.getElementById('lbl-radius').innerText = m.radius+" M";
+        if(id==='intruder') document.getElementById('chk-strobe').checked = m.strobe;
 
-        updateArmBtn();
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById('detail').classList.add('active');
-        document.getElementById('backBtn').style.display='block';
+        nav('detail');
     }
 
     function updSet(type, val) {
-        if(!curMod) return;
-        if(type === 'sens') {
-            mods[curMod].sens = parseInt(val);
-            document.getElementById('lbl-sens').innerText = val + "%";
+        if(!detailMod) return;
+        if(type==='sens') { mods[detailMod].sens = parseInt(val); document.getElementById('lbl-sens').innerText = val+"%"; }
+        if(type==='timer') { mods[detailMod].timer = parseInt(val); document.getElementById('lbl-timer').innerText = val+" MIN"; }
+        if(type==='radius') { mods[detailMod].radius = parseInt(val); document.getElementById('lbl-radius').innerText = val+" M"; }
+    }
+    
+    function toggleStrobeOpt() { mods.intruder.strobe = document.getElementById('chk-strobe').checked; }
+
+    function updateMasterBar() {
+        const selCount = Object.values(mods).filter(m => m.selected).length;
+        const armedCount = Object.values(mods).filter(m => m.armed).length;
+        const bar = document.getElementById('master-bar');
+        const btn = document.getElementById('master-btn');
+
+        if (selCount > 0) {
+            bar.classList.add('visible');
+            btn.className = 'master-btn';
+            btn.innerText = `ARM ${selCount} SYSTEMS`;
+            btn.onclick = executeMasterAction; // Arm Selected
+        } else if (armedCount > 0) {
+            bar.classList.add('visible');
+            btn.className = 'master-btn disarm';
+            btn.innerText = "DISARM ALL";
+            btn.onclick = disarmAll;
+        } else {
+            bar.classList.remove('visible');
         }
     }
 
-    function toggleArm() {
-        if(!curMod) return;
-        mods[curMod].armed = !mods[curMod].armed;
+    function executeMasterAction() {
+        if(audioCtx.state === 'suspended') audioCtx.resume(); // Ensure Audio
+
+        Object.keys(mods).forEach(k => {
+            if(mods[k].selected) {
+                mods[k].armed = true;
+                mods[k].selected = false; // Deselect after arming
+                
+                // Special Init Logic
+                if(k === 'geo') mods.geo.start = [lastLat, lastLng];
+                if(k === 'seismic') accBase = null;
+                if(k === 'lumen') {
+                    mods.lumen.ready = false;
+                    setTimeout(() => mods.lumen.ready = true, 3000);
+                }
+                if(k === 'deadman') startDeadman();
+            }
+        });
         
-        // LUMEN: 3 Second Delay
-        if(curMod === 'lumen' && mods.lumen.armed) {
-            mods.lumen.ready = false;
-            document.getElementById('arm-btn').innerText = "ARMING IN 3s...";
-            setTimeout(() => { mods.lumen.ready = true; updateArmBtn(); }, 3000);
-        }
-
-        // SEISMIC: Reset Baseline
-        if(curMod === 'seismic' && mods.seismic.armed) accBase = null;
-
-        updateArmBtn();
-        const c = document.getElementById('card-'+curMod);
-        if(mods[curMod].armed) c.classList.add('armed'); else c.classList.remove('armed','alert');
+        document.getElementById('sys-status').innerText = "SYSTEM ARMED";
+        document.getElementById('sys-status').style.color = "var(--neon-green)";
+        renderGrid();
     }
 
-    function updateArmBtn() {
-        const b = document.getElementById('arm-btn');
-        if(mods[curMod].armed) { 
-            b.classList.add('armed'); 
-            b.innerText = mods[curMod].ready === false ? "ARMING..." : "DISARM"; 
-        } else { 
-            b.classList.remove('armed'); 
-            b.innerText = "ARM MODULE"; 
-        }
+    function disarmAll() {
+        Object.keys(mods).forEach(k => mods[k].armed = false);
+        clearInterval(dmInt);
+        document.getElementById('sys-status').innerText = "SYSTEM IDLE";
+        document.getElementById('sys-status').style.color = "#666";
+        renderGrid();
     }
 
-    // --- PHYSICS ENGINE (THE FIX) ---
+    // --- 4. SENSOR LOGIC (FINE TUNED) ---
     function visLoop() {
         requestAnimationFrame(visLoop);
         if(!stream) return;
-        
-        // 1. Get Light Data
+
         const cvs = document.getElementById('cvs');
         const ctx = cvs.getContext('2d');
         const vid = document.getElementById('cam');
-        
         cvs.width=50; cvs.height=50;
         ctx.drawImage(vid,0,0,50,50);
-        const d = ctx.getImageData(0,0,50,50).data;
-        let l=0; for(let i=0; i<d.length; i+=4) l+=d[i];
-        const avg = Math.floor(l/2500); // 0-255 brightness
+        const data = ctx.getImageData(0,0,50,50).data;
+        let l=0; for(let i=0; i<data.length; i+=4) l+=data[i];
+        const avg = Math.floor(l/2500);
 
-        // 2. INTRUDER LOGIC (Fixed Math)
-        // Previous error: Threshold was 5000. Max delta is 255.
-        // New logic: Delta of 10 is subtle, 50 is huge.
+        // Intruder
         const delta = Math.abs(avg - lastLight);
-        
-        if(curMod==='intruder') document.getElementById('live-data').innerText = `MOTION: ${delta} / LIGHT: ${avg}`;
-        
-        // Threshold: High Sens (90) -> thresh 3. Low Sens (10) -> thresh 40.
-        const intThresh = (100 - mods.intruder.sens) * 0.4;
-        
-        if(mods.intruder.armed && delta > intThresh && delta > 2) { 
-             // delta > 2 prevents noise
-             trigger('intruder');
-        }
+        if(detailMod==='intruder') document.getElementById('live-data').innerText = `DELTA: ${delta} | LIGHT: ${avg}`;
+        const intThresh = (100 - mods.intruder.sens) * 0.5; 
+        if(mods.intruder.armed && delta > intThresh && delta > 2) trigger('intruder');
 
-        // 3. LUMEN LOGIC (Fixed Logic)
-        if(mods.lumen.armed && mods.lumen.ready) {
-            // High Sens (90) -> Trigger at brightness 20
-            // Low Sens (10) -> Trigger at brightness 180
-            const lumThresh = 200 - (mods.lumen.sens * 1.8);
-            if(avg > lumThresh) trigger('lumen');
-        }
+        // Lumen
+        if(detailMod==='lumen') document.getElementById('live-data').innerText = `LIGHT: ${avg}`;
+        const lumThresh = 200 - (mods.lumen.sens * 1.8);
+        if(mods.lumen.armed && mods.lumen.ready && avg > lumThresh) trigger('lumen');
 
         lastLight = avg;
     }
@@ -298,63 +386,121 @@
         const acc = e.accelerationIncludingGravity;
         if(!acc) return;
         if(!accBase) accBase = acc;
-        
-        // 4. SEISMIC LOGIC (Fixed Sensitivity)
-        // Old threshold was ~1.5. New needs to be ~0.1
+
         const diff = Math.abs(acc.x-accBase.x) + Math.abs(acc.y-accBase.y);
         
-        if(curMod==='seismic') document.getElementById('live-data').innerText = "VIB: "+diff.toFixed(3);
-        
-        // Sens 100 -> Thresh 0.05. Sens 1 -> Thresh 1.0
+        // Seismic (Tuned drift)
+        if(detailMod==='seismic') document.getElementById('live-data').innerText = `VIB: ${diff.toFixed(4)}`;
         const seisT = (100 - mods.seismic.sens) / 100 + 0.05;
-        
         if(mods.seismic.armed && diff > seisT) trigger('seismic');
 
-        // Drift correction for seismic (Slowly adapt to new angle)
-        accBase.x += (acc.x - accBase.x) * 0.05;
-        accBase.y += (acc.y - accBase.y) * 0.05;
+        // Drift (Lowered to 0.02 to allow slower movements to trigger)
+        accBase.x += (acc.x - accBase.x) * 0.02;
+        accBase.y += (acc.y - accBase.y) * 0.02;
+
+        // Wreck
+        const g = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2) / 9.8;
+        if(detailMod==='wreck') document.getElementById('live-data').innerText = `G-FORCE: ${g.toFixed(1)}`;
+        if(mods.wreck.armed && g > 2 + ((100-mods.wreck.sens)/20)) trigger('wreck');
+
+        // Snoop
+        if(mods.snoop.armed && diff > 1.5) trigger('snoop');
     });
 
-    // --- ALERT SYSTEM ---
-    function trigger(key) {
-        if(document.getElementById('card-'+key).classList.contains('alert')) return;
-        
-        // Visual
-        const card = document.getElementById('card-'+key);
-        card.classList.add('alert');
-        setTimeout(()=>card.classList.remove('alert'), 3000);
-        
-        // Log
-        logs.push(`[${new Date().toLocaleTimeString()}] ${mods[key].name} TRIGGERED`);
+    function updateGPS(pos) {
+        lastLat = pos.coords.latitude;
+        lastLng = pos.coords.longitude;
+        const mph = (pos.coords.speed || 0) * 2.237;
 
-        // Strobe
-        if(key === 'intruder' && mods.intruder.strobe) {
-            const s = document.getElementById('strobe-layer');
-            s.style.display='block'; s.style.animation='strobe 0.1s infinite';
-            setTimeout(()=>{ s.style.display='none'; s.style.animation='none'; }, 5000);
+        if(map) usrMarker.setLatLng([lastLat, lastLng]);
+        if(map && !threatMarker) map.setView([lastLat, lastLng], 15);
+
+        // Perimeter
+        if(mods.geo.armed && mods.geo.start) {
+            const d = map.distance([lastLat, lastLng], mods.geo.start);
+            if(detailMod==='geo') document.getElementById('live-data').innerText = `DIST: ${Math.round(d)}m`;
+            if(d > mods.geo.radius) trigger('geo');
         }
 
-        playSiren();
+        // Velocity
+        if(detailMod==='velocity') document.getElementById('live-data').innerText = `SPEED: ${mph.toFixed(1)} MPH`;
+        if(mods.velocity.armed && mph > 15) trigger('velocity');
     }
 
-    function playSiren() {
-        if(!audioCtx) return;
-        if(audioCtx.state === 'suspended') audioCtx.resume();
-        const o = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        o.connect(g); g.connect(audioCtx.destination);
-        o.frequency.value=800; o.start(); o.stop(audioCtx.currentTime+0.5);
+    // --- 5. DEADMAN ---
+    function startDeadman() {
+        mods.deadman.current = mods.deadman.timer * 60;
+        clearInterval(dmInt);
+        dmInt = setInterval(() => {
+            mods.deadman.current--;
+            if(detailMod==='deadman') document.getElementById('live-data').innerText = `TIME: ${mods.deadman.current}s`;
+            if(mods.deadman.current <= 0) { trigger('deadman'); clearInterval(dmInt); }
+        }, 1000);
+    }
+
+    // --- 6. LOGS & ALERTS ---
+    function trigger(id) {
+        if(document.getElementById('card-'+id).classList.contains('alert')) return;
+        
+        // Visual
+        const card = document.getElementById('card-'+id);
+        card.classList.add('alert');
+        setTimeout(()=>card.classList.remove('alert'), 3000);
+
+        // Audio
+        if(audioCtx) {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.frequency.value = 800; o.start(); o.stop(audioCtx.currentTime+0.5);
+        }
+
+        // Log
+        const t = new Date().toLocaleTimeString();
+        logs.unshift({time: t, module: mods[id].name, event: "TRIGGERED"});
+        updateLogTable();
+
+        // Strobe
+        if(id === 'intruder' && mods.intruder.strobe) {
+            const s = document.getElementById('strobe-layer');
+            s.style.display='block'; s.style.animation='strobe 0.1s infinite';
+            setTimeout(()=>{s.style.display='none';s.style.animation='none';}, 4000);
+        }
+
+        // Map Threat
+        if(map) {
+            if(!threatMarker) threatMarker = L.circleMarker([lastLat, lastLng], {color: 'red', radius: 20}).addTo(map);
+        }
+    }
+
+    function updateLogTable() {
+        const tbody = document.getElementById('log-body');
+        tbody.innerHTML = logs.map(l => `
+            <tr>
+                <td class="log-time">${l.time}</td>
+                <td>${l.module}</td>
+                <td class="log-alert">${l.event}</td>
+            </tr>
+        `).join('');
+    }
+
+    function downloadLogs() {
+        let txt = "VANGUARD INTEL REPORT\n---------------------\n";
+        logs.forEach(l => txt += `[${l.time}] ${l.module}: ${l.event}\n`);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([txt], {type:'text/plain'}));
+        a.download = 'vanguard_intel.txt';
+        a.click();
+    }
+
+    function nav(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        // Highlight logic could go here
     }
 
     function panic() { alert("PANIC BEACON BROADCASTING"); }
-
-    function downloadLogs() {
-        const b = new Blob([logs.join('\n')], {type:'text/plain'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(b);
-        a.download='vanguard_logs.txt';
-        a.click();
-    }
 </script>
 </body>
 </html>
