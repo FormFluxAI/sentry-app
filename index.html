@@ -111,7 +111,7 @@
         // --- 1. BYPASS LOGIN LOGIC ---
         function appLogin(type) {
             // Check if Firebase is actually loaded (it won't be yet, and that's okay)
-            if(type === 'google' && !window.firebase) {
+            if(type === 'google' && !window.firebase) {in
                 alert("CLOUD SYNC REQUIRED: Please add Firebase API Keys to enable Google Login. Using Guest Mode for now.");
                 type = 'guest';
             }
