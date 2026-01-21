@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ECHO: ONE</title>
+    <title>ECHO: ONE | FORMFLUX.AI</title>
     
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -15,13 +15,18 @@
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ============================================================
-        // 🔴 STEP 1: PASTE YOUR FIREBASE KEYS BELOW
+        // SYSTEM CONFIGURATION (Justin White)
         // ============================================================
         const firebaseConfig = {
-            
+            apiKey: "PASTE_YOUR_API_KEY_HERE",
+            authDomain: "PASTE_YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "PASTE_YOUR_PROJECT_ID",
+            storageBucket: "PASTE_YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "PASTE_YOUR_SENDER_ID",
+            appId: "PASTE_YOUR_APP_ID"
         };
 
-        // --- BACKEND LOGIC ---
+        // BACKEND INITIALIZATION
         let app, auth, db;
         try {
             app = initializeApp(firebaseConfig);
@@ -30,13 +35,13 @@
             window.isCloudActive = true;
             console.log("ECHO: ONE CLOUD CONNECTED");
         } catch(e) {
-            console.warn("LOCAL MODE: Keys missing or invalid.");
+            console.warn("LOCAL MODE: Keys missing or network offline.");
             window.isCloudActive = false;
         }
 
         window.backend = {
             login: (provider) => {
-                // BYPASS: If keys are missing, force local guest mode immediately
+                // FAILSAFE: If keys missing, instant guest access
                 if(!window.isCloudActive) {
                     ui.loginSuccess({ displayName: "Operator (Local)", isAnonymous: true });
                     return;
@@ -46,21 +51,27 @@
                     const p = new GoogleAuthProvider();
                     signInWithPopup(auth, p)
                         .then(res => ui.loginSuccess(res.user))
-                        .catch(e => alert("Login Error: " + e.message));
+                        .catch(e => {
+                            alert("Cloud Login Error: " + e.message + "\nUsing Local Mode.");
+                            ui.loginSuccess({ displayName: "Operator (Offline)", isAnonymous: true });
+                        });
                 } else {
                     signInAnonymously(auth)
                         .then(res => ui.loginSuccess(res.user))
-                        .catch(e => alert("Guest Login Error: " + e.message));
+                        .catch(e => {
+                            ui.loginSuccess({ displayName: "Guest (Offline)", isAnonymous: true });
+                        });
                 }
             },
             logEvent: (mod, val) => {
-                if(window.isCloudActive && auth.currentUser) {
+                if(window.isCloudActive && auth && auth.currentUser) {
                     addDoc(collection(db, "security_events"), {
                         owner: "Justin White",
                         user: auth.currentUser.uid,
                         module: mod,
                         value: val,
-                        time: serverTimestamp()
+                        time: serverTimestamp(),
+                        version: "2.0"
                     });
                 }
                 console.log(`[DATA LOG] ${mod}: ${val}`);
@@ -115,6 +126,11 @@
         .status-badge { font-size: 0.65rem; color: #444; background: #111; padding: 4px 8px; border-radius: 4px; border: 1px solid #222; font-weight: bold; }
         .status-badge.active { color: #000; background: var(--gold); border-color: var(--gold); }
 
+        /* TABS */
+        .tabs { display: flex; border-bottom: 1px solid #222; background: #000; }
+        .tab { flex: 1; padding: 15px; text-align: center; color: #666; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
+        .tab.active { color: var(--gold); border-bottom: 2px solid var(--gold); }
+
         /* CONTENT AREA */
         #content { flex: 1; overflow-y: auto; padding-bottom: 100px; }
         .view { display: none; padding: 15px; animation: fade 0.3s; }
@@ -126,6 +142,7 @@
             margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
             position: relative; overflow: hidden; transition: 0.2s;
         }
+        /* States */
         .mod-card.selected { border-color: var(--gold-dim); background: #161400; }
         .mod-card.armed { border-color: #0f0; background: rgba(0, 50, 0, 0.2); }
         .mod-card.triggered { border-color: var(--alert); background: rgba(50, 0, 0, 0.4); animation: flash 0.5s infinite; }
@@ -143,6 +160,11 @@
         .meter-fill { height: 100%; background: var(--gold); width: 0%; transition: width 0.1s; }
         .meter-line { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--alert); z-index: 2; }
 
+        /* SETTINGS MODAL */
+        #settings-modal { position: fixed; bottom: 0; left: 0; width: 100%; background: #161616; border-top: 2px solid var(--gold); padding: 25px; z-index: 2000; transform: translateY(100%); transition: 0.3s; }
+        #settings-modal.open { transform: translateY(0); }
+        input[type=range] { width: 100%; margin: 20px 0; accent-color: var(--gold); background: #333; height: 4px; border-radius: 2px; -webkit-appearance: none; }
+
         /* FOOTER */
         .dock {
             position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95);
@@ -154,10 +176,12 @@
         .btn-disarm { background: transparent; border: 1px solid var(--alert); color: var(--alert); display: none; }
         .btn-panic { flex: 0.3; background: var(--alert); color: #fff; font-weight: 900; }
 
-        /* SETTINGS */
-        #settings-modal { position: fixed; bottom: 0; left: 0; width: 100%; background: #161616; border-top: 2px solid var(--gold); padding: 25px; z-index: 2000; transform: translateY(100%); transition: 0.3s; }
-        #settings-modal.open { transform: translateY(0); }
-        input[type=range] { width: 100%; margin: 20px 0; accent-color: var(--gold); background: #333; height: 4px; border-radius: 2px; -webkit-appearance: none; }
+        /* LOGS */
+        .log-row { font-family: monospace; font-size: 0.75rem; padding: 8px 0; border-bottom: 1px solid #222; color: #aaa; }
+        .log-alert { color: var(--alert); font-weight: bold; }
+
+        /* MAP */
+        #map-el { width: 100%; height: 60vh; border-radius: 6px; border: 1px solid #333; }
 
         /* UTILS */
         #strobe { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: none; pointer-events: none; background: #fff; }
@@ -183,7 +207,8 @@
 
         <div class="legal-notice">
             COPYRIGHT © 2026 JUSTIN WHITE. ALL RIGHTS RESERVED.<br>
-            DISCLAIMER: This tool does not replace 911 services. Use at own risk.
+            DISCLAIMER: This software is a deterrent tool. It does not replace emergency services (911). 
+            FormFlux.AI is not liable for damages resulting from use.
         </div>
     </div>
 
@@ -192,18 +217,20 @@
         <div class="status-badge" id="sys-status">OFFLINE</div>
     </header>
 
-    <div style="display:flex; border-bottom:1px solid #222; background:#000;">
-        <div onclick="ui.tab('dash')" style="flex:1; padding:15px; text-align:center; color:var(--gold); border-bottom:2px solid var(--gold); font-size:0.8rem; font-weight:bold; cursor:pointer;">PROTOCOLS</div>
-        <div onclick="ui.tab('map')" style="flex:1; padding:15px; text-align:center; color:#666; font-size:0.8rem; font-weight:bold; cursor:pointer;">TACTICAL MAP</div>
-        <div onclick="ui.tab('logs')" style="flex:1; padding:15px; text-align:center; color:#666; font-size:0.8rem; font-weight:bold; cursor:pointer;">INTEL</div>
+    <div class="tabs">
+        <div class="tab active" onclick="ui.tab('dash')" id="tab-dash">PROTOCOLS</div>
+        <div class="tab" onclick="ui.tab('map')" id="tab-map">TACTICAL MAP</div>
+        <div class="tab" onclick="ui.tab('logs')" id="tab-logs">INTEL</div>
     </div>
 
     <div id="content">
         <div id="view-dash" class="view active">
-            <div id="module-container"></div>
-        </div>
+            <div id="module-container"></div> </div>
 
         <div id="view-map" class="view">
+            <div style="background:var(--alert); color:#fff; padding:10px; border-radius:4px; font-weight:bold; font-size:0.8rem; text-align:center; display:none;" id="map-warn">
+                THREAT DETECTED - EVASION PATH PLOTTED
+            </div>
             <div id="map-el"></div>
         </div>
 
@@ -231,8 +258,11 @@
     <canvas id="cvs" style="display:none;"></canvas>
 
 <script>
-/** ECHO: ONE - CORE ENGINE */
+/** * ECHO: ONE - CORE ENGINE 
+ * Signed: Justin White, 2026
+ */
 
+// 1. CONFIGURATION
 const MODULES = [
     { id: 'audio',    name: 'AUDIO SENTINEL', desc: 'Gunshot / Glass Break', icon: 'graphic_eq', thresh: 70 },
     { id: 'seismic',  name: 'SEISMIC GUARD',  desc: 'Structural Vibration',  icon: 'vibration',  thresh: 25 },
@@ -241,54 +271,81 @@ const MODULES = [
     { id: 'snoop',    name: 'SNOOP DETECT',   desc: 'Device Handling',       icon: 'touch_app',  thresh: 15 },
     { id: 'wreck',    name: 'IMPACT MONITOR', desc: 'G-Force > 4G',          icon: 'car_crash',  thresh: 50 },
     { id: 'net',      name: 'NET-SENTRY',     desc: 'Anti-Jammer',           icon: 'wifi_off',   thresh: 0 },
-    { id: 'velocity', name: 'VELOCITY LOCK',  desc: 'Anti-Abduction',        icon: 'speed',      thresh: 15 },
-    { id: 'geo',      name: 'PERIMETER',      desc: '50m Geofence',          icon: 'radar',      thresh: 50 },
-    { id: 'deadman',  name: 'DEAD MAN',       desc: 'Safety Timer (5min)',   icon: 'timer',      thresh: 5 },
+    { id: 'velocity', name: 'VELOCITY LOCK',  desc: 'Anti-Abduction',        icon: 'speed',      thresh: 15 }, // MPH
+    { id: 'geo',      name: 'PERIMETER',      desc: '50m Geofence',          icon: 'radar',      thresh: 50 }, // Meters
+    { id: 'deadman',  name: 'DEAD MAN',       desc: 'Safety Timer (5min)',   icon: 'timer',      thresh: 5 },   // Minutes
     { id: 'mag',      name: 'MAG-FIELD',      desc: 'Metal Detection',       icon: 'explore',    thresh: 60 }
 ];
 
-const state = { mods: {}, vals: {}, base: {} };
-MODULES.forEach(m => { state.mods[m.id] = { selected: false, active: false, thresh: m.thresh }; state.vals[m.id] = 0; });
+const state = {
+    mods: {},
+    vals: {},
+    base: {}
+};
 
+MODULES.forEach(m => {
+    state.mods[m.id] = { selected: false, active: false, thresh: m.thresh };
+    state.vals[m.id] = 0;
+});
+
+// --- UI CONTROLLER ---
 const ui = {
+    cur: null, // Current settings target
+
     loginSuccess: (user) => {
         document.getElementById('auth-screen').style.opacity = 0;
         setTimeout(() => {
             document.getElementById('auth-screen').style.display = 'none';
-            sys.init(); 
+            sys.init(); // Boot Hardware
         }, 500);
         const name = user.isAnonymous ? 'GUEST OP' : 'OPERATOR';
         document.getElementById('sys-status').innerText = name + " ONLINE";
         logger.add("SYSTEM", `AUTHORIZED: ${name}`);
     },
+
     render: () => {
         const c = document.getElementById('module-container');
         c.innerHTML = '';
         MODULES.forEach(m => {
             const st = state.mods[m.id];
             const cls = st.active ? 'armed' : (st.selected ? 'selected' : '');
+            
             c.innerHTML += `
             <div class="mod-card ${cls}" id="card-${m.id}" onclick="ui.toggle('${m.id}')">
                 <i class="material-icons mod-icon">${m.icon}</i>
                 <div class="mod-text">
                     <div class="mod-title">${m.name}</div>
                     <div class="mod-desc">${m.desc}</div>
-                    <div class="meter"><div class="meter-line" style="left:${st.thresh}%"></div><div class="meter-fill" id="bar-${m.id}"></div></div>
+                    <div class="meter">
+                        <div class="meter-line" style="left:${st.thresh}%"></div>
+                        <div class="meter-fill" id="bar-${m.id}"></div>
+                    </div>
                 </div>
-                <i class="material-icons" style="color:${st.selected? 'var(--gold)' : '#333'}" onclick="ui.settings('${m.id}', event)">settings</i>
+                <i class="material-icons" style="color:#666; padding:10px; cursor:pointer;" onclick="ui.settings('${m.id}', event)">settings</i>
             </div>`;
         });
     },
-    toggle: (id) => { state.mods[id].selected = !state.mods[id].selected; ui.render(); },
+
+    toggle: (id) => {
+        state.mods[id].selected = !state.mods[id].selected;
+        ui.render();
+    },
+
     tab: (id) => {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById(`view-${id}`).classList.add('active');
+        document.getElementById(`tab-${id}`).classList.add('active');
         if(id === 'map') setTimeout(() => mapSys.map.invalidateSize(), 200);
     },
-    updateMeters: () => MODULES.forEach(m => {
-        const el = document.getElementById(`bar-${m.id}`);
-        if(el) el.style.width = state.vals[m.id] + "%";
-    }),
+
+    updateMeters: () => {
+        MODULES.forEach(m => {
+            const el = document.getElementById(`bar-${m.id}`);
+            if(el) el.style.width = state.vals[m.id] + "%";
+        });
+    },
+
     settings: (id, e) => {
         e.stopPropagation();
         ui.cur = id;
@@ -299,106 +356,191 @@ const ui = {
             <input type="range" min="1" max="100" value="${st.thresh}" oninput="ui.save(this.value)">`;
         document.getElementById('settings-modal').classList.add('open');
     },
+
     save: (val) => {
         state.mods[ui.cur].thresh = parseInt(val);
         document.getElementById('lbl-val').innerText = val;
         ui.render();
     },
+
     closeSettings: () => document.getElementById('settings-modal').classList.remove('open')
 };
 
+// --- SYSTEM HARDWARE ---
 const sys = {
     ctx: null, stream: null, analyser: null,
+    
     init: async () => {
         ui.render();
         try {
+            // Audio
             sys.ctx = new (window.AudioContext || window.webkitAudioContext)();
-            try { sys.stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:true}); }
-            catch(e) { sys.stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true}); }
-            document.getElementById('cam').srcObject = sys.stream;
-            sys.analyser = sys.ctx.createAnalyser();
-            sys.ctx.createMediaStreamSource(sys.stream).connect(sys.analyser);
-            if(typeof DeviceMotionEvent.requestPermission==='function') await DeviceMotionEvent.requestPermission();
             
+            // Camera (Failover)
+            try {
+                sys.stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:true});
+            } catch(e) {
+                sys.stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true}); 
+            }
+            document.getElementById('cam').srcObject = sys.stream;
+
+            // Analyser
+            sys.analyser = sys.ctx.createAnalyser();
+            const src = sys.ctx.createMediaStreamSource(sys.stream);
+            src.connect(sys.analyser);
+
+            // Sensors
+            if(typeof DeviceMotionEvent.requestPermission === 'function') await DeviceMotionEvent.requestPermission();
+
+            // Map
             mapSys.init();
+
+            // Loops
             requestAnimationFrame(sys.visLoop);
             window.addEventListener('devicemotion', sys.motLoop);
             navigator.geolocation.watchPosition(mapSys.update, null, {enableHighAccuracy:true});
             window.addEventListener('offline', () => { if(state.mods.net.active) alarm.trigger('net'); });
-        } catch(e) { console.error(e); }
+
+        } catch(e) { console.error(e); alert("Sensors Blocked. Ensure HTTPS/SSL is active."); }
     },
+
     arm: () => {
-        let cnt = 0;
+        let count = 0;
         MODULES.forEach(m => {
             if(state.mods[m.id].selected) {
                 state.mods[m.id].active = true;
-                cnt++;
+                count++;
+                // Baselines
                 if(m.id==='seismic') state.base.acc = null;
                 if(m.id==='geo') state.base.geo = mapSys.pos;
+                if(m.id==='deadman') sys.startTimer(state.mods.deadman.thresh);
                 if(m.id==='lumen') setTimeout(()=>state.mods.lumen.ready=true, 3000);
             }
         });
-        if(cnt===0) return alert("Select Protocols.");
-        if(sys.ctx.state==='suspended') sys.ctx.resume();
-        document.getElementById('btn-arm').style.display='none';
-        document.getElementById('btn-disarm').style.display='block';
+
+        if(count === 0) return alert("SELECT PROTOCOLS FIRST");
+        
+        if(sys.ctx.state === 'suspended') sys.ctx.resume();
+        document.getElementById('btn-arm').style.display = 'none';
+        document.getElementById('btn-disarm').style.display = 'block';
+        document.getElementById('sys-status').innerText = "SYSTEM ARMED";
+        document.getElementById('sys-status').classList.add('active');
         ui.render();
     },
+
     disarm: () => {
         MODULES.forEach(m => state.mods[m.id].active = false);
-        document.getElementById('btn-arm').style.display='block';
-        document.getElementById('btn-disarm').style.display='none';
-        document.getElementById('strobe').style.display='none';
+        document.getElementById('btn-arm').style.display = 'block';
+        document.getElementById('btn-disarm').style.display = 'none';
+        document.getElementById('sys-status').innerText = "SYSTEM OFFLINE";
+        document.getElementById('sys-status').classList.remove('active');
+        document.getElementById('strobe').style.display = 'none';
         ui.render();
     },
+
+    startTimer: (mins) => {
+        let sec = mins * 60;
+        const int = setInterval(() => {
+            if(!state.mods.deadman.active) clearInterval(int);
+            sec--;
+            if(sec <= 0) { alarm.trigger('deadman'); clearInterval(int); }
+        }, 1000);
+    },
+
     visLoop: () => {
         requestAnimationFrame(sys.visLoop);
         if(!sys.stream) return;
-        const cvs = document.getElementById('cvs'); const ctx = cvs.getContext('2d'); const vid = document.getElementById('cam');
+
+        // Video Processing
+        const cvs = document.getElementById('cvs');
+        const ctx = cvs.getContext('2d');
+        const vid = document.getElementById('cam');
+
         if(vid.readyState === vid.HAVE_ENOUGH_DATA) {
-            cvs.width=40; cvs.height=40; ctx.drawImage(vid,0,0,40,40);
+            cvs.width = 40; cvs.height = 40;
+            ctx.drawImage(vid, 0, 0, 40, 40);
             const d = ctx.getImageData(0,0,40,40).data;
-            let sum=0; for(let i=0; i<d.length; i+=4) sum+=d[i];
-            const avg = Math.floor(sum/1600);
+            let sum = 0; for(let i=0; i<d.length; i+=4) sum+=d[i];
+            const avg = Math.floor(sum/1600); // 0-255
+
             state.vals.lumen = (avg/255)*100;
-            state.vals.intruder = Math.min(Math.abs(avg-(state.base.light||avg))*10, 100);
+            const delta = Math.abs(avg - (state.base.light||avg));
+            state.vals.intruder = Math.min(delta*10, 100);
+
             if(state.mods.lumen.active && state.mods.lumen.ready && state.vals.lumen > state.mods.lumen.thresh) alarm.trigger('lumen');
             if(state.mods.intruder.active && state.vals.intruder > state.mods.intruder.thresh) alarm.trigger('intruder');
             state.base.light = avg;
         }
+
+        // Audio
         if(sys.analyser) {
-            const d = new Uint8Array(sys.analyser.frequencyBinCount); sys.analyser.getByteFrequencyData(d);
-            state.vals.audio = (d.reduce((a,b)=>a+b)/d.length/255)*100;
-            if(state.mods.audio.active && state.vals.audio > state.mods.audio.thresh) alarm.trigger('audio');
+            const d = new Uint8Array(sys.analyser.frequencyBinCount);
+            sys.analyser.getByteFrequencyData(d);
+            const vol = d.reduce((a,b)=>a+b)/d.length;
+            state.vals.audio = (vol/255)*100;
+            
+            if(state.mods.audio.active && state.vals.audio > state.mods.audio.thresh) {
+                alarm.trigger('audio');
+                mapSys.plotEvade();
+            }
         }
         ui.updateMeters();
     },
+
     motLoop: (e) => {
-        const acc = e.accelerationIncludingGravity; if(!acc) return;
+        const acc = e.accelerationIncludingGravity;
+        if(!acc) return;
         if(!state.base.acc) state.base.acc = acc;
-        const diff = Math.abs(acc.x-state.base.acc.x) + Math.abs(acc.y-state.base.acc.y);
+
+        const diff = Math.abs(acc.x - state.base.acc.x) + Math.abs(acc.y - state.base.acc.y);
+        const g = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2) / 9.8;
+
         state.vals.seismic = Math.min(diff*50, 100);
         state.vals.snoop = Math.min(diff*20, 100);
-        state.vals.wreck = ((Math.sqrt(acc.x**2+acc.y**2+acc.z**2)/9.8-1)/4)*100;
-        
+        state.vals.wreck = ((g-1)/4)*100;
+
         if(state.mods.seismic.active && state.vals.seismic > state.mods.seismic.thresh) alarm.trigger('seismic');
         if(state.mods.snoop.active && state.vals.snoop > state.mods.snoop.thresh) alarm.trigger('snoop');
         if(state.mods.wreck.active && state.vals.wreck > state.mods.wreck.thresh) alarm.trigger('wreck');
-        
-        state.base.acc.x += (acc.x-state.base.acc.x)*0.05; state.base.acc.y += (acc.y-state.base.acc.y)*0.05;
+
+        // Drift
+        state.base.acc.x += (acc.x - state.base.acc.x)*0.05;
+        state.base.acc.y += (acc.y - state.base.acc.y)*0.05;
     }
 };
 
+// --- MAP ---
 const mapSys = {
-    init: () => { try { mapSys.map = L.map('map-el').setView([0,0], 13); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mapSys.map); mapSys.usr = L.circleMarker([0,0], {color:'#00f3ff'}).addTo(mapSys.map); } catch(e){} },
+    init: () => {
+        try {
+            mapSys.map = L.map('map-el').setView([0,0], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mapSys.map);
+            mapSys.usr = L.circleMarker([0,0], {color: '#00f3ff'}).addTo(mapSys.map);
+        } catch(e){}
+    },
     update: (pos) => {
-        const lat = pos.coords.latitude; const lng = pos.coords.longitude; mapSys.pos = [lat, lng];
-        state.vals.velocity = (pos.coords.speed||0)*2.237;
-        if(mapSys.map) { mapSys.usr.setLatLng([lat, lng]); if(!mapSys.threat) mapSys.map.setView([lat, lng], 15); }
-        if(state.mods.velocity.active && state.vals.velocity > state.mods.velocity.thresh) alarm.trigger('velocity');
-        if(state.mods.geo.active && state.base.geo) {
-            if(mapSys.dist(lat, lng, state.base.geo[0], state.base.geo[1]) > state.mods.geo.thresh) alarm.trigger('geo');
+        const lat = pos.coords.latitude; const lng = pos.coords.longitude;
+        mapSys.pos = [lat, lng];
+        const spd = (pos.coords.speed||0)*2.237; // MPH
+        state.vals.velocity = spd;
+
+        if(mapSys.map) {
+            mapSys.usr.setLatLng([lat, lng]);
+            if(!mapSys.threat) mapSys.map.setView([lat, lng], 15);
         }
+
+        if(state.mods.velocity.active && spd > state.mods.velocity.thresh) alarm.trigger('velocity');
+        if(state.mods.geo.active && state.base.geo) {
+            const d = mapSys.dist(lat, lng, state.base.geo[0], state.base.geo[1]);
+            if(d > state.mods.geo.thresh) alarm.trigger('geo');
+        }
+    },
+    plotEvade: () => {
+        if(!mapSys.map || !mapSys.pos) return;
+        mapSys.threat = L.circleMarker(mapSys.pos, {color:'red', radius:20}).addTo(mapSys.map);
+        const safe = [mapSys.pos[0]+0.005, mapSys.pos[1]+0.005];
+        L.polyline([mapSys.pos, safe], {color:'#00ff41', dashArray:'5,10'}).addTo(mapSys.map);
+        document.getElementById('map-warn').style.display='block';
     },
     dist: (lat1, lon1, lat2, lon2) => {
         const R=6371e3; const p1=lat1*Math.PI/180, p2=lat2*Math.PI/180;
@@ -408,36 +550,56 @@ const mapSys = {
     }
 };
 
+// --- ALARM & LOG ---
 const alarm = {
     trigger: (id) => {
-        const c = document.getElementById(`card-${id}`);
-        if(c.classList.contains('triggered')) return;
-        c.classList.add('triggered');
-        
-        // VIBRATION + SOUND
-        if(navigator.vibrate) navigator.vibrate([500, 200, 500]);
+        const card = document.getElementById(`card-${id}`);
+        if(card.classList.contains('triggered')) return;
+        card.classList.add('triggered');
+
+        // VIBRATE (Mobile Only)
+        if(navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 1000]);
+
+        // AUDIO
         const o = sys.ctx.createOscillator(); o.connect(sys.ctx.destination);
         o.type='sawtooth'; o.frequency.setValueAtTime(600, sys.ctx.currentTime);
         o.frequency.linearRampToValueAtTime(1000, sys.ctx.currentTime+0.5);
         o.start(); o.stop(sys.ctx.currentTime+1);
-        
+
+        // STROBE
         if(id==='intruder' || id==='audio') {
             const s = document.getElementById('strobe');
             s.style.display='block'; s.style.animation='flash 0.1s infinite';
             setTimeout(()=>{s.style.display='none';s.style.animation='none'}, 4000);
         }
-        window.backend.logEvent(id, state.vals[id].toFixed(2));
-        setTimeout(()=>c.classList.remove('triggered'), 3000);
+
+        logger.add(MODULES.find(m=>m.id===id).name, "TRIGGERED");
+        backend.logEvent(id, state.vals[id].toFixed(2)); // CLOUD LOG
+
+        setTimeout(() => card.classList.remove('triggered'), 3000);
     },
-    panic: () => { alarm.trigger('audio'); alert("PANIC BEACON SENT"); }
+    panic: () => {
+        alarm.trigger('audio');
+        alert("PANIC BEACON SENT");
+        backend.logEvent("PANIC", "USER_INITIATED");
+    },
+    stopStrobe: () => document.getElementById('strobe').style.display='none'
 };
 
 const logger = {
+    items: [],
     add: (mod, msg) => {
         const t = new Date().toLocaleTimeString();
-        document.getElementById('log-list').innerHTML = `<div>[${t}] ${mod}: ${msg}</div>` + document.getElementById('log-list').innerHTML;
+        logger.items.unshift(`[${t}] ${mod}: ${msg}`);
+        document.getElementById('log-list').innerHTML = logger.items.map(l => `<div class="log-row">${l}</div>`).join('');
     },
-    export: () => alert("Packaging data for FormFlux...")
+    export: () => {
+        const b = new Blob([logger.items.join('\n')], {type:'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b);
+        a.download = 'intel_log.txt';
+        a.click();
+    }
 };
 </script>
 </body>
