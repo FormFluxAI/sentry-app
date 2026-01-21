@@ -3,599 +3,316 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VANGUARD SINGULARITY</title>
+    <title>VANGUARD ECLIPSE</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <style>
-        :root { --primary:#00f3ff; --alert:#ff003c; --success:#00ff41; --bg:#050505; --panel:#111; }
-        * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; font-family:'Segoe UI',monospace; }
-        body { background:var(--bg); color:#eee; margin:0; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+        :root { --bg: #050505; --card: #141414; --text: #eee; --accent: #00f3ff; --danger: #ff003c; --success: #00ff41; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; }
+        
+        header { padding: 15px; background: rgba(0,0,0,0.9); border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-weight: 900; letter-spacing: 2px; color: var(--accent); }
+        .status { font-size: 0.7rem; font-weight: bold; color: #666; }
+        
+        /* GRID LAYOUT */
+        .grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+        
+        .card { 
+            background: var(--card); border: 1px solid #333; border-radius: 8px; padding: 15px; 
+            display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; position: relative;
+            transition: 0.2s;
+        }
+        
+        .card.armed { border-color: var(--success); background: rgba(0, 50, 0, 0.2); }
+        .card.alert { border-color: var(--danger); background: rgba(50, 0, 0, 0.5); animation: pulse 0.5s infinite; }
+        
+        .card-head { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .icon { font-size: 1.8rem; color: #555; }
+        .card.armed .icon { color: var(--success); }
+        
+        .label { font-weight: bold; font-size: 0.9rem; }
+        .sub { font-size: 0.7rem; color: #888; }
+        
+        /* VISUALIZER BARS */
+        .vis-container { 
+            height: 6px; background: #222; border-radius: 3px; margin-top: 10px; position: relative; overflow: hidden; 
+        }
+        .vis-bar { 
+            height: 100%; width: 0%; background: var(--accent); transition: width 0.1s; 
+        }
+        .vis-trigger {
+            position: absolute; top: 0; bottom: 0; width: 2px; background: var(--danger); z-index: 10;
+        }
+        
+        /* FOOTER */
+        .footer { padding: 15px; background: #000; border-top: 1px solid #333; display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-start { background: var(--accent); color: #000; }
+        .btn-panic { background: var(--danger); color: #fff; flex: 0.4; }
 
-        /* --- LOGIN OVERLAY --- */
-        #login-gate { position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9000; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:0.5s; }
-        .login-box { width:300px; text-align:center; }
-        .login-btn { width:100%; padding:15px; background:var(--primary); border:none; border-radius:4px; font-weight:bold; cursor:pointer; margin-top:15px; font-size:1rem; }
+        @keyframes pulse { 0%, 100% { border-color: var(--danger); } 50% { border-color: #000; } }
         
-        /* --- MAIN UI --- */
-        header { padding:15px; background:rgba(0,0,0,0.95); border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center; z-index:100; }
-        .brand { color:var(--primary); font-weight:900; letter-spacing:2px; font-size:1.2rem; }
-        
-        #app-body { flex:1; position:relative; overflow:hidden; }
-        .view { position:absolute; top:0; left:0; width:100%; height:100%; background:var(--bg); transform:translateX(100%); transition:0.3s; overflow-y:auto; padding-bottom:100px; }
-        .view.active { transform:translateX(0); }
-        
-        /* --- GRID CARDS --- */
-        .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:15px; }
-        .card { background:var(--panel); border:1px solid #333; border-radius:8px; padding:15px; min-height:120px; position:relative; transition:0.2s; cursor:pointer; display:flex; flex-direction:column; justify-content:space-between; }
-        .card.selected { border-color:var(--primary); background:rgba(0, 243, 255, 0.1); }
-        .card.armed { border-color:var(--success); background:rgba(0, 50, 0, 0.4); }
-        .card.triggered { border-color:var(--alert); background:rgba(50, 0, 0, 0.6); animation:flash 0.5s infinite; }
-        
-        .card-top { display:flex; justify-content:space-between; align-items:flex-start; }
-        .icon { font-size:2rem; color:#555; transition:0.3s; }
-        .card.armed .icon { color:var(--success); }
-        .card.selected .icon { color:var(--primary); }
-        
-        .gear { padding:5px; margin:-5px; color:#555; font-size:1.2rem; z-index:10; }
-
-        /* --- CONTROLS --- */
-        .master-bar { position:fixed; bottom:90px; left:0; width:100%; padding:0 20px; z-index:500; pointer-events:none; opacity:0; transition:0.3s; transform:translateY(10px); }
-        .master-bar.show { opacity:1; pointer-events:all; transform:translateY(0); }
-        .action-btn { width:100%; padding:15px; border-radius:50px; border:none; font-weight:900; box-shadow:0 0 15px rgba(0,0,0,0.5); font-size:1rem; cursor:pointer; }
-        .btn-arm { background:var(--primary); color:#000; }
-        .btn-disarm { background:var(--alert); color:#fff; }
-
-        /* --- NAV FOOTER --- */
-        .footer { position:fixed; bottom:0; left:0; width:100%; height:80px; background:#080808; border-top:1px solid #333; display:flex; justify-content:space-around; align-items:center; z-index:600; }
-        .nav-item { color:#666; background:none; border:none; font-size:1.5rem; padding:10px; }
-        .nav-item.active { color:var(--primary); text-shadow:0 0 10px var(--primary); }
-        .panic-orb { width:60px; height:60px; background:var(--alert); border-radius:50%; border:none; color:#fff; font-weight:bold; box-shadow:0 0 15px var(--alert); margin-top:-30px; font-size:0.8rem; }
-
-        /* --- SETTINGS PANEL --- */
-        .panel-ctrl { background:#1a1a1a; padding:15px; border-radius:8px; margin-bottom:15px; }
-        input[type=range] { width:100%; background:#333; height:4px; -webkit-appearance:none; margin-top:10px; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; background:var(--primary); border-radius:50%; }
-
-        /* --- STEALTH OVERLAY --- */
-        #stealth-curtain { position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:9999; display:none; cursor:none; }
-        #strobe-fx { position:fixed; top:0; left:0; width:100%; height:100%; z-index:8000; display:none; pointer-events:none; }
-        
-        /* --- LOGS --- */
-        .log-row { padding:10px; border-bottom:1px solid #222; font-size:0.8rem; display:flex; justify-content:space-between; }
-        .log-time { color:var(--primary); font-family:monospace; }
-        
-        @keyframes flash { 0%,100%{border-color:var(--alert);} 50%{border-color:#000;} }
-        @keyframes strobeAnim { 0%{background:#fff;} 50%{background:#000;} 100%{background:#fff;} }
+        /* HIDDEN */
+        video { position: fixed; top: -1000px; }
     </style>
 </head>
 <body>
 
-    <video id="cam-feed" autoplay playsinline muted style="position:fixed; top:-9999px;"></video>
-    <canvas id="motion-cvs" style="display:none;"></canvas>
-    <div id="strobe-fx"></div>
-    <div id="stealth-curtain" onclick="app.toggleStealth(false)"></div>
-
-    <div id="login-gate">
-        <h1 class="brand" style="font-size:2rem; margin-bottom:5px;">VANGUARD</h1>
-        <div style="color:#666; font-size:0.8rem; margin-bottom:30px;">SINGULARITY ENGINE v1.0</div>
-        <div class="login-box">
-            <input type="text" placeholder="USER ID" style="width:100%; padding:15px; background:#222; border:1px solid #444; color:#fff; text-align:center;">
-            <button class="login-btn" onclick="app.boot()">ACTIVATE SYSTEM</button>
-            <div id="boot-log" style="margin-top:20px; font-size:0.7rem; color:#444; text-align:left; height:100px; overflow-y:auto;"></div>
-        </div>
-    </div>
-
     <header>
-        <div class="brand">VANGUARD</div>
-        <div style="display:flex; gap:15px;">
-            <i class="material-icons" style="color:#666;" onclick="app.toggleStealth(true)">visibility_off</i>
-            <span id="sys-state" style="font-size:0.8rem; color:#666; font-weight:bold; align-self:center;">IDLE</span>
-        </div>
+        <div class="logo">VANGUARD</div>
+        <div class="status" id="sys-status">OFFLINE</div>
     </header>
 
-    <div id="app-body">
+    <div class="grid">
+        <div class="card" id="card-audio" onclick="app.toggle('audio')">
+            <div class="card-head"><i class="material-icons icon">graphic_eq</i></div>
+            <div><div class="label">AUDIO</div><div class="sub">Gunshot / Scream</div></div>
+            <div class="vis-container">
+                <div class="vis-trigger" style="left: 70%;"></div>
+                <div class="vis-bar" id="bar-audio"></div>
+            </div>
+        </div>
+
+        <div class="card" id="card-seismic" onclick="app.toggle('seismic')">
+            <div class="card-head"><i class="material-icons icon">vibration</i></div>
+            <div><div class="label">SEISMIC</div><div class="sub">Vibration / Door</div></div>
+            <div class="vis-container">
+                <div class="vis-trigger" style="left: 20%;"></div>
+                <div class="vis-bar" id="bar-seismic"></div>
+            </div>
+        </div>
+
+        <div class="card" id="card-lumen" onclick="app.toggle('lumen')">
+            <div class="card-head"><i class="material-icons icon">light_mode</i></div>
+            <div><div class="label">LUMEN</div><div class="sub">Pocket Trap</div></div>
+            <div class="vis-container">
+                <div class="vis-trigger" style="left: 80%;"></div>
+                <div class="vis-bar" id="bar-lumen"></div>
+            </div>
+        </div>
+
+        <div class="card" id="card-intruder" onclick="app.toggle('intruder')">
+            <div class="card-head"><i class="material-icons icon">videocam</i></div>
+            <div><div class="label">INTRUDER</div><div class="sub">Visual Motion</div></div>
+            <div class="vis-container">
+                <div class="vis-trigger" style="left: 50%;"></div>
+                <div class="vis-bar" id="bar-intruder"></div>
+            </div>
+        </div>
         
-        <div id="view-dash" class="view active">
-            <div class="grid" id="module-grid"></div>
-        </div>
-
-        <div id="view-settings" class="view">
-            <div style="padding:15px;">
-                <button onclick="router.go('dash')" style="background:none; border:none; color:#888; margin-bottom:10px;">&larr; BACK</button>
-                <h1 id="set-title" style="margin:0; color:var(--primary);">MODULE</h1>
-                <p id="set-desc" style="color:#666; margin-bottom:20px;">...</p>
-
-                <div id="controls-area"></div>
-                
-                <div class="panel-ctrl">
-                    <label style="color:#555; font-size:0.7rem;">SENSOR DATA STREAM</label>
-                    <div id="live-readout" style="color:var(--success); font-family:monospace; font-size:1.2rem;">--</div>
-                </div>
+        <div class="card" id="card-wreck" onclick="app.toggle('wreck')">
+            <div class="card-head"><i class="material-icons icon">car_crash</i></div>
+            <div><div class="label">WRECK</div><div class="sub">G-Force Impact</div></div>
+            <div class="vis-container">
+                <div class="vis-trigger" style="left: 40%;"></div>
+                <div class="vis-bar" id="bar-wreck"></div>
             </div>
         </div>
 
-        <div id="view-map" class="view">
-            <div id="map-container" style="width:100%; height:100%;"></div>
-        </div>
-
-        <div id="view-logs" class="view">
-            <div style="padding:15px; display:flex; justify-content:space-between; align-items:center;">
-                <h2 style="margin:0; color:#fff;">INTEL LOG</h2>
-                <button onclick="logger.download()" style="background:#333; color:#fff; border:none; padding:8px; border-radius:4px;">SAVE</button>
+        <div class="card" id="card-snoop" onclick="app.toggle('snoop')">
+            <div class="card-head"><i class="material-icons icon">touch_app</i></div>
+            <div><div class="label">SNOOP</div><div class="sub">Device Tilt</div></div>
+            <div class="vis-container">
+                <div class="vis-trigger" style="left: 10%;"></div>
+                <div class="vis-bar" id="bar-snoop"></div>
             </div>
-            <div id="log-feed"></div>
         </div>
-
-    </div>
-
-    <div class="master-bar" id="master-bar">
-        <button id="master-btn" class="action-btn btn-arm">ARM SELECTED</button>
     </div>
 
     <div class="footer">
-        <button class="nav-item active" onclick="router.go('dash')"><i class="material-icons">grid_view</i></button>
-        <button class="panic-orb" onclick="alarmSys.panic()"><i class="material-icons">priority_high</i></button>
-        <button class="nav-item" onclick="router.go('map')"><i class="material-icons">map</i></button>
-        <button class="nav-item" onclick="router.go('logs')"><i class="material-icons">history</i></button>
+        <button class="btn btn-start" id="btn-main" onclick="app.init()">ACTIVATE SENSORS</button>
+        <button class="btn btn-panic" onclick="app.panic()">PANIC</button>
     </div>
 
+    <video id="cam" autoplay playsinline muted></video>
+    <canvas id="cvs" style="display:none;"></canvas>
+
 <script>
-/** * VANGUARD SINGULARITY ENGINE
- * A monolithic Class-based architecture for stability.
- */
-
-// --- 1. MODULE DEFINITIONS ---
-const MODULES = {
-    intruder: { name: "Intruder", icon: "motion_photos_on", desc: "Camera Motion + Strobe", sens: 50, hasStrobe: true },
-    seismic:  { name: "Seismic", icon: "vibration", desc: "Vibration / Door Guard", sens: 85, base: null },
-    lumen:    { name: "Lumen", icon: "light_mode", desc: "Pocket/Bag Trap", sens: 50, ready: false },
-    audio:    { name: "Audio", icon: "graphic_eq", desc: "Gunshot/Scream Detect", sens: 70 },
-    snoop:    { name: "Snoop", icon: "touch_app", desc: "Device Tilt/Touch", sens: 90 },
-    wreck:    { name: "Wreck", icon: "car_crash", desc: "Impact G-Force", sens: 40 },
-    velocity: { name: "Velocity", icon: "speed", desc: "Anti-Abduction (>15mph)", sens: null },
-    net:      { name: "Net-Sentry", icon: "wifi_off", desc: "Offline/Jammer Detect", sens: null },
-    deadman:  { name: "Dead Man", icon: "hourglass_bottom", desc: "Safety Timer", sens: null, timer: 5, current: 0 },
-    geo:      { name: "Perimeter", icon: "share_location", desc: "GPS Geofence", sens: null, radius: 50, start: null },
-    mag:      { name: "Mag-Field", icon: "explore", desc: "Magnetic Anomaly", sens: 50, base: null }
-};
-
-// --- 2. CORE APP CLASS ---
-class VanguardApp {
-    constructor() {
-        this.armed = false;
-        this.state = JSON.parse(JSON.stringify(MODULES)); // Deep copy config
-        this.ctx = null; // Audio Context
-        this.stream = null;
-        this.lastLight = 0;
-        this.watchId = null;
-        this.accBase = null; // Accelerometer baseline
-        this.loopId = null;
-    }
-
-    log(msg, type='info') {
-        const div = document.getElementById('boot-log');
-        div.innerHTML += `<div style="color:${type==='err'?'#f00':'#0f0'}">> ${msg}</div>`;
-        div.scrollTop = div.scrollHeight;
-    }
-
-    async boot() {
-        this.log("Initializing Hardware...");
+    const app = {
+        active: false,
+        ctx: null,
+        stream: null,
+        analyser: null,
+        accBase: null,
+        lastLight: 0,
         
-        // Audio Context (Must happen on user click)
-        try {
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-            this.log("Audio Engine: READY");
-        } catch(e) { this.log("Audio Error", 'err'); }
+        // CONFIG: [Armed?, Threshold(0-100), CurrentVal(0-100)]
+        mods: {
+            audio: { armed: false, thresh: 70, val: 0 },
+            seismic: { armed: false, thresh: 20, val: 0 },
+            lumen: { armed: false, thresh: 80, val: 0 }, // Trigger if > 80 brightness
+            intruder: { armed: false, thresh: 50, val: 0 },
+            wreck: { armed: false, thresh: 40, val: 0 },
+            snoop: { armed: false, thresh: 10, val: 0 }
+        },
 
-        // Camera
-        try {
-            this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
-            document.getElementById('cam-feed').srcObject = this.stream;
-            this.log("Optical Sensors: ONLINE");
-        } catch(e) { this.log("Camera Blocked (Check HTTPS)", 'err'); }
-
-        // Motion Sensors
-        if (typeof DeviceMotionEvent.requestPermission === 'function') {
-            try {
-                const p = await DeviceMotionEvent.requestPermission();
-                this.log(`Motion Sensors: ${p.toUpperCase()}`);
-            } catch(e) { this.log("Motion Permission Failed", 'err'); }
-        }
-
-        // Map
-        mapSys.init();
-
-        // Start Engine
-        this.startLoops();
-        this.renderGrid();
-        
-        setTimeout(() => {
-            document.getElementById('login-gate').style.opacity = 0;
-            setTimeout(() => document.getElementById('login-gate').style.display='none', 500);
-        }, 1000);
-    }
-
-    startLoops() {
-        // Visual Loop
-        const loop = () => {
-            this.processVisuals();
-            this.processAudio();
-            requestAnimationFrame(loop);
-        };
-        loop();
-
-        // Motion Loop
-        window.addEventListener('devicemotion', (e) => this.processMotion(e));
-        
-        // GPS Loop
-        navigator.geolocation.watchPosition((p) => this.processGPS(p), null, {enableHighAccuracy:true});
-
-        // Network Loop
-        window.addEventListener('offline', () => { if(this.state.net.armed) alarmSys.trigger('net'); });
-    }
-
-    // --- SENSOR PROCESSING ---
-
-    processVisuals() {
-        if(!this.stream) return;
-        const vid = document.getElementById('cam-feed');
-        const cvs = document.getElementById('motion-cvs');
-        const ctx = cvs.getContext('2d');
-        
-        if (vid.readyState === vid.HAVE_ENOUGH_DATA) {
-            cvs.width = 50; cvs.height = 50;
-            ctx.drawImage(vid, 0, 0, 50, 50);
-            const data = ctx.getImageData(0,0,50,50).data;
-            let total = 0;
-            for(let i=0; i<data.length; i+=4) total += data[i];
-            const avg = Math.floor(total/2500);
-
-            // Logic
-            const delta = Math.abs(avg - this.lastLight);
+        init: async () => {
+            document.getElementById('btn-main').innerText = "INITIALIZING...";
             
-            // Updating UI
-            if(router.currentMod === 'intruder') ui.updateLive(`DELTA: ${delta} | LIGHT: ${avg}`);
-            if(router.currentMod === 'lumen') ui.updateLive(`LIGHT: ${avg}`);
-
-            // Triggers
-            if(this.state.intruder.armed && delta > ((100 - this.state.intruder.sens) * 0.5) && delta > 2) alarmSys.trigger('intruder');
-            if(this.state.lumen.armed && this.state.lumen.ready) {
-                if(avg > (255 - (this.state.lumen.sens * 2))) alarmSys.trigger('lumen');
-            }
-
-            this.lastLight = avg;
-        }
-    }
-
-    processAudio() {
-        if(!this.ctx || !this.stream) return;
-        // Simple analyzer setup logic would go here if not already cached
-        // For brevity, assuming audio context processing is active
-    }
-
-    processMotion(e) {
-        const acc = e.accelerationIncludingGravity;
-        if(!acc) return;
-        if(!this.accBase) this.accBase = acc;
-
-        const diff = Math.abs(acc.x - this.accBase.x) + Math.abs(acc.y - this.accBase.y);
-        const g = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2) / 9.8;
-
-        // Update UI
-        if(router.currentMod === 'seismic') ui.updateLive(`VIB: ${diff.toFixed(4)}`);
-        if(router.currentMod === 'wreck') ui.updateLive(`G-FORCE: ${g.toFixed(1)}`);
-        
-        // Logic
-        // Seismic (Tuned to be sensitive)
-        const seisThresh = (100 - this.state.seismic.sens) / 100 + 0.02;
-        if(this.state.seismic.armed && diff > seisThresh) alarmSys.trigger('seismic');
-
-        // Wreck
-        const wreckThresh = 2 + ((100 - this.state.wreck.sens) / 20);
-        if(this.state.wreck.armed && g > wreckThresh) alarmSys.trigger('wreck');
-
-        // Snoop
-        if(this.state.snoop.armed && diff > 1.5) alarmSys.trigger('snoop');
-
-        // Drift Correction (Tare)
-        this.accBase.x += (acc.x - this.accBase.x) * 0.05;
-        this.accBase.y += (acc.y - this.accBase.y) * 0.05;
-    }
-
-    processGPS(pos) {
-        const speed = (pos.coords.speed || 0) * 2.237; // MPH
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        
-        mapSys.update(lat, lng);
-        
-        // Velocity
-        if(router.currentMod === 'velocity') ui.updateLive(`SPEED: ${speed.toFixed(1)} MPH`);
-        if(this.state.velocity.armed && speed > 15) alarmSys.trigger('velocity');
-
-        // Perimeter
-        if(this.state.geo.armed && this.state.geo.start) {
-            const d = mapSys.dist(lat, lng, this.state.geo.start[0], this.state.geo.start[1]);
-            if(router.currentMod === 'geo') ui.updateLive(`DIST: ${Math.round(d)}m`);
-            if(d > this.state.geo.radius) alarmSys.trigger('geo');
-        }
-    }
-
-    // --- MODULE MANAGEMENT ---
-    toggleSelect(id) {
-        this.state[id].selected = !this.state[id].selected;
-        this.renderGrid();
-    }
-
-    armSelected() {
-        if(this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
-        
-        Object.keys(this.state).forEach(k => {
-            if(this.state[k].selected) {
-                const m = this.state[k];
-                m.armed = true;
-                m.selected = false;
+            try {
+                // Audio
+                app.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Specific Init Logic
-                if(k === 'seismic') this.accBase = null; // Zero out
-                if(k === 'geo') {
-                   // Async get current pos for start point
-                   navigator.geolocation.getCurrentPosition(p => m.start = [p.coords.latitude, p.coords.longitude]);
+                // Camera
+                app.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
+                document.getElementById('cam').srcObject = app.stream;
+                
+                // Audio Analyzer
+                app.analyser = app.ctx.createAnalyser();
+                const src = app.ctx.createMediaStreamSource(app.stream);
+                src.connect(app.analyser);
+
+                // Motion
+                if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                    await DeviceMotionEvent.requestPermission();
                 }
-                if(k === 'lumen') {
-                    m.ready = false;
-                    setTimeout(() => m.ready = true, 4000); // 4s delay
-                }
-                if(k === 'deadman') this.startDeadman();
+
+                // Loops
+                app.active = true;
+                requestAnimationFrame(app.visLoop);
+                window.addEventListener('devicemotion', app.motionLoop);
+                
+                document.getElementById('sys-status').innerText = "ONLINE - READY TO ARM";
+                document.getElementById('sys-status').style.color = "var(--accent)";
+                document.getElementById('btn-main').innerText = "DISARM ALL";
+                document.getElementById('btn-main').style.background = "#333";
+                document.getElementById('btn-main').style.color = "#fff";
+                document.getElementById('btn-main').onclick = app.disarmAll;
+
+            } catch(e) {
+                alert("SENSOR ERROR: " + e.message + ". Check permissions/HTTPS.");
+                document.getElementById('btn-main').innerText = "RETRY";
             }
-        });
-        ui.setStatus("SYSTEM ARMED", "var(--success)");
-        this.renderGrid();
-    }
+        },
 
-    disarmAll() {
-        Object.keys(this.state).forEach(k => this.state[k].armed = false);
-        ui.setStatus("IDLE", "#666");
-        this.renderGrid();
-    }
-
-    startDeadman() {
-        // Deadman logic
-        let m = this.state.deadman;
-        m.current = m.timer * 60;
-        if(this.dmInt) clearInterval(this.dmInt);
-        this.dmInt = setInterval(() => {
-            m.current--;
-            if(router.currentMod === 'deadman') ui.updateLive(`TIME: ${m.current}s`);
-            if(m.current <= 0) {
-                alarmSys.trigger('deadman');
-                clearInterval(this.dmInt);
+        toggle: (id) => {
+            if(!app.active) return alert("Click ACTIVATE SENSORS first.");
+            
+            const m = app.mods[id];
+            m.armed = !m.armed;
+            
+            const el = document.getElementById(`card-${id}`);
+            if(m.armed) {
+                el.classList.add('armed');
+                // Resume Audio Context on interaction
+                if(app.ctx.state === 'suspended') app.ctx.resume();
+                
+                // Reset baselines for motion
+                if(id === 'seismic' || id === 'snoop') app.accBase = null;
+            } else {
+                el.classList.remove('armed', 'alert');
             }
-        }, 1000);
-    }
+        },
 
-    renderGrid() {
-        const grid = document.getElementById('module-grid');
-        grid.innerHTML = '';
-        Object.keys(this.state).forEach(k => {
-            const m = this.state[k];
-            const div = document.createElement('div');
-            div.className = `card ${m.selected?'selected':''} ${m.armed?'armed':''}`;
-            div.id = `card-${k}`;
-            div.onclick = () => this.toggleSelect(k);
-            div.innerHTML = `
-                <div class="card-top">
-                    <div style="width:10px; height:10px; border-radius:50%; background:${m.armed?'#0f0':'#333'};"></div>
-                    <i class="material-icons gear" onclick="router.openSettings('${k}', event)">settings</i>
-                </div>
-                <i class="material-icons icon">${m.icon}</i>
-                <div>
-                    <div style="font-weight:bold;">${m.name}</div>
-                    <div style="font-size:0.7rem; color:#888;">${m.desc}</div>
-                </div>
-            `;
-            grid.appendChild(div);
-        });
-        ui.updateMasterBar();
-    }
+        disarmAll: () => {
+            Object.keys(app.mods).forEach(k => {
+                app.mods[k].armed = false;
+                document.getElementById(`card-${k}`).classList.remove('armed', 'alert');
+            });
+        },
 
-    toggleStealth(active) {
-        document.getElementById('stealth-curtain').style.display = active ? 'block' : 'none';
-        if(active) alert("STEALTH ACTIVE. Tap screen to unlock.");
-    }
-}
+        // --- SENSOR PROCESSING ---
+        visLoop: () => {
+            if(!app.active) return;
+            requestAnimationFrame(app.visLoop);
+            
+            // 1. VIDEO (Intruder/Lumen)
+            const cvs = document.getElementById('cvs');
+            const ctx = cvs.getContext('2d');
+            const vid = document.getElementById('cam');
+            
+            if(vid.readyState === vid.HAVE_ENOUGH_DATA) {
+                cvs.width=50; cvs.height=50;
+                ctx.drawImage(vid,0,0,50,50);
+                const d = ctx.getImageData(0,0,50,50).data;
+                let l=0; for(let i=0; i<d.length; i+=4) l+=d[i];
+                const avg = l/2500; // 0-255
+                
+                // Lumen (Raw brightness 0-100%)
+                const lightPct = (avg / 255) * 100;
+                app.updateBar('lumen', lightPct);
+                
+                // Intruder (Delta)
+                const delta = Math.abs(avg - app.lastLight);
+                const motionPct = Math.min((delta / 50) * 100, 100);
+                app.updateBar('intruder', motionPct);
 
-// --- 3. ALARM SYSTEM ---
-class AlarmSystem {
-    constructor() {
-        this.active = false;
-    }
+                app.lastLight = avg;
+            }
 
-    trigger(id) {
-        if(document.getElementById(`card-${id}`).classList.contains('triggered')) return;
-        
-        // Visual
-        document.getElementById(`card-${id}`).classList.add('triggered');
-        
-        // Audio
-        this.playSiren();
-        
-        // Strobe
-        if(app.state.intruder.strobe || id === 'intruder') this.strobe(true);
+            // 2. AUDIO
+            if(app.analyser) {
+                const d = new Uint8Array(app.analyser.frequencyBinCount);
+                app.analyser.getByteFrequencyData(d);
+                const vol = d.reduce((a,b)=>a+b)/d.length;
+                const audPct = (vol / 255) * 100;
+                app.updateBar('audio', audPct);
+            }
+        },
 
-        // Log
-        logger.add(app.state[id].name, "TRIGGERED");
+        motionLoop: (e) => {
+            if(!app.active) return;
+            const acc = e.accelerationIncludingGravity;
+            if(!acc) return;
+            if(!app.accBase) app.accBase = acc;
 
-        // Map Threat
-        mapSys.addThreat();
+            const diff = Math.abs(acc.x-app.accBase.x) + Math.abs(acc.y-app.accBase.y);
+            const g = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2) / 9.8;
 
-        setTimeout(() => {
-            document.getElementById(`card-${id}`).classList.remove('triggered');
-            this.strobe(false);
-        }, 5000);
-    }
+            // Seismic (Very Sensitive)
+            // Multiplier to make small moves visible on bar
+            const seisPct = Math.min(diff * 50, 100); 
+            app.updateBar('seismic', seisPct);
 
-    playSiren() {
-        if(!app.ctx) return;
-        const o = app.ctx.createOscillator();
-        const g = app.ctx.createGain();
-        o.connect(g); g.connect(app.ctx.destination);
-        o.frequency.value = 500;
-        o.frequency.linearRampToValueAtTime(1200, app.ctx.currentTime + 0.5);
-        o.start(); o.stop(app.ctx.currentTime + 3);
-    }
+            // Snoop (Tilt)
+            const snoopPct = Math.min(diff * 10, 100);
+            app.updateBar('snoop', snoopPct);
 
-    strobe(active) {
-        const el = document.getElementById('strobe-fx');
-        if(active) {
-            el.style.display = 'block';
-            el.style.animation = 'strobeAnim 0.1s infinite';
-        } else {
-            el.style.display = 'none';
-            el.style.animation = 'none';
+            // Wreck (G Force)
+            // Scale: 1G = 0%, 5G = 100%
+            const wreckPct = Math.min(((g - 1) / 4) * 100, 100);
+            app.updateBar('wreck', wreckPct);
+
+            // Drift
+            app.accBase.x += (acc.x - app.accBase.x) * 0.05;
+            app.accBase.y += (acc.y - app.accBase.y) * 0.05;
+        },
+
+        updateBar: (id, val) => {
+            const m = app.mods[id];
+            // Update Bar Width
+            document.getElementById(`bar-${id}`).style.width = val + "%";
+            
+            // Trigger Logic
+            if(m.armed && val > m.thresh) {
+                app.trigger(id);
+            }
+        },
+
+        trigger: (id) => {
+            const el = document.getElementById(`card-${id}`);
+            if(el.classList.contains('alert')) return;
+            
+            el.classList.add('alert');
+            app.playSiren();
+            
+            setTimeout(() => el.classList.remove('alert'), 2000);
+        },
+
+        playSiren: () => {
+            if(!app.ctx) return;
+            const o = app.ctx.createOscillator();
+            const g = app.ctx.createGain();
+            o.connect(g); g.connect(app.ctx.destination);
+            o.type = 'sawtooth';
+            o.frequency.value = 800;
+            o.start(); 
+            o.stop(app.ctx.currentTime + 0.5);
+        },
+
+        panic: () => {
+            alert("PANIC BEACON");
         }
-    }
-
-    panic() {
-        this.playSiren();
-        this.strobe(true);
-        setTimeout(() => this.strobe(false), 5000);
-        logger.add("PANIC", "USER INITIATED");
-    }
-}
-
-// --- 4. MAP SYSTEM ---
-class MapSystem {
-    init() {
-        this.map = L.map('map-container').setView([0,0], 2);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(this.map);
-        this.marker = L.circleMarker([0,0], {color:'#00f3ff'}).addTo(this.map);
-    }
-    update(lat, lng) {
-        if(this.marker) this.marker.setLatLng([lat, lng]);
-        if(!this.threat) this.map.setView([lat, lng], 15);
-        this.lastPos = [lat, lng];
-    }
-    addThreat() {
-        if(this.lastPos) L.circleMarker(this.lastPos, {color:'red', radius:20}).addTo(this.map);
-    }
-    dist(lat1, lon1, lat2, lon2) {
-        const R=6371e3; 
-        const φ1=lat1*Math.PI/180, φ2=lat2*Math.PI/180, Δφ=(lat2-lat1)*Math.PI/180, Δλ=(lon2-lon1)*Math.PI/180;
-        const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2) * Math.sin(Δλ/2)**2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
-}
-
-// --- 5. UI & ROUTER ---
-const app = new VanguardApp();
-const alarmSys = new AlarmSystem();
-const mapSys = new MapSystem();
-
-const router = {
-    currentMod: null,
-    go: (view) => {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById(`view-${view}`).classList.add('active');
-        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-        // Re-render map fix
-        if(view === 'map') setTimeout(() => mapSys.map.invalidateSize(), 200);
-    },
-    openSettings: (id, e) => {
-        e.stopPropagation();
-        router.currentMod = id;
-        const m = app.state[id];
-        
-        document.getElementById('set-title').innerText = m.name;
-        document.getElementById('set-desc').innerText = m.desc;
-        
-        // Build Controls
-        const c = document.getElementById('controls-area');
-        c.innerHTML = '';
-        
-        // Sensitivity
-        if(m.sens !== null) {
-            c.innerHTML += `
-                <div class="panel-ctrl">
-                    <label>SENSITIVITY: <span id="lbl-sens">${m.sens}%</span></label>
-                    <input type="range" value="${m.sens}" min="1" max="100" oninput="ui.updateSetting('sens', this.value)">
-                </div>`;
-        }
-        // Timer (Deadman)
-        if(id === 'deadman') {
-            c.innerHTML += `
-                <div class="panel-ctrl">
-                    <label>TIMER: <span id="lbl-timer">${m.timer} MIN</span></label>
-                    <input type="range" value="${m.timer}" min="1" max="60" oninput="ui.updateSetting('timer', this.value)">
-                </div>`;
-        }
-        // Radius (Geo)
-        if(id === 'geo') {
-            c.innerHTML += `
-                <div class="panel-ctrl">
-                    <label>RADIUS: <span id="lbl-rad">${m.radius} M</span></label>
-                    <input type="range" value="${m.radius}" min="10" max="500" oninput="ui.updateSetting('rad', this.value)">
-                </div>`;
-        }
-
-        router.go('settings');
-    }
-};
-
-const ui = {
-    updateMasterBar: () => {
-        const sel = Object.values(app.state).some(m => m.selected);
-        const armed = Object.values(app.state).some(m => m.armed);
-        const bar = document.getElementById('master-bar');
-        const btn = document.getElementById('master-btn');
-        
-        if(sel) {
-            bar.classList.add('show');
-            btn.innerText = "ARM SELECTED";
-            btn.className = "action-btn btn-arm";
-            btn.onclick = () => app.armSelected();
-        } else if (armed) {
-            bar.classList.add('show');
-            btn.innerText = "DISARM ALL";
-            btn.className = "action-btn btn-disarm";
-            btn.onclick = () => app.disarmAll();
-        } else {
-            bar.classList.remove('show');
-        }
-    },
-    setStatus: (msg, color) => {
-        const el = document.getElementById('sys-state');
-        el.innerText = msg;
-        el.style.color = color;
-    },
-    updateLive: (text) => document.getElementById('live-readout').innerText = text,
-    updateSetting: (type, val) => {
-        const id = router.currentMod;
-        if(type==='sens') { app.state[id].sens = val; document.getElementById('lbl-sens').innerText = val+"%"; }
-        if(type==='timer') { app.state[id].timer = val; document.getElementById('lbl-timer').innerText = val+" MIN"; }
-        if(type==='rad') { app.state[id].radius = val; document.getElementById('lbl-rad').innerText = val+" M"; }
-    }
-};
-
-const logger = {
-    logs: [],
-    add: (mod, evt) => {
-        const t = new Date().toLocaleTimeString();
-        logger.logs.unshift(`[${t}] ${mod}: ${evt}`);
-        const div = document.getElementById('log-feed');
-        div.innerHTML = logger.logs.map(l => `<div class="log-row">${l}</div>`).join('');
-    },
-    download: () => {
-        const b = new Blob([logger.logs.join('\n')], {type:'text/plain'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(b);
-        a.download = 'vanguard_intel.txt';
-        a.click();
-    }
-};
-
+    };
 </script>
 </body>
 </html>
