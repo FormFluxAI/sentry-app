@@ -3,454 +3,410 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sentinel Ultimate</title>
+    <title>VANGUARD: BLACK OPS</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         :root {
-            --neon-blue: #00f3ff;
-            --neon-green: #00ff41;
+            --neon-cyan: #00f3ff;
+            --neon-amber: #ffae00;
             --neon-red: #ff003c;
             --bg-dark: #050505;
-            --panel-bg: #111;
-            --text-main: #eee;
+            --glass: rgba(20, 20, 20, 0.8);
         }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; font-family: 'Segoe UI', sans-serif; }
         
         body {
-            font-family: 'Courier New', Courier, monospace; /* Cyberpunk aesthetic */
             background-color: var(--bg-dark);
-            color: var(--text-main);
-            margin: 0; padding: 0;
-            height: 100vh; overflow: hidden;
-            display: flex; flex-direction: column;
+            color: #eee; margin: 0; height: 100vh; display: flex; flex-direction: column;
+            background-image: linear-gradient(0deg, transparent 24%, rgba(0, 243, 255, .03) 25%, rgba(0, 243, 255, .03) 26%, transparent 27%, transparent 74%, rgba(0, 243, 255, .03) 75%, rgba(0, 243, 255, .03) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(0, 243, 255, .03) 25%, rgba(0, 243, 255, .03) 26%, transparent 27%, transparent 74%, rgba(0, 243, 255, .03) 75%, rgba(0, 243, 255, .03) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
         }
 
-        /* --- UI FRAMEWORK --- */
+        /* HEADER */
         header {
-            border-bottom: 2px solid #333; padding: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0,0,0,0.8);
+            padding: 15px; border-bottom: 1px solid #333; background: rgba(0,0,0,0.9);
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
         }
-        h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; color: var(--neon-blue); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); }
-
-        /* Main Scroll Area */
+        .brand { font-weight: 900; letter-spacing: 2px; color: var(--neon-cyan); font-size: 1.2rem; }
+        
+        /* SCROLL AREA */
         main { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; }
 
-        /* Module Cards */
-        .module {
-            background: var(--panel-bg); border: 1px solid #333;
-            border-radius: 8px; margin-bottom: 20px; padding: 15px;
-            position: relative; transition: 0.3s;
+        .section-title {
+            font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 1px;
+            margin: 20px 0 10px 0; border-bottom: 1px solid #333; padding-bottom: 5px;
         }
-        .module.active { border-color: var(--neon-green); box-shadow: 0 0 15px rgba(0, 255, 65, 0.1); }
-        .module.alert { border-color: var(--neon-red); animation: pulseRed 0.5s infinite; }
 
-        .mod-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .mod-title { font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+        /* GRID SYSTEM */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         
-        /* Control Buttons */
-        .btn {
-            background: #222; color: #aaa; border: 1px solid #444;
-            padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer;
-            text-transform: uppercase; letter-spacing: 1px; flex: 1;
+        .card {
+            background: var(--glass); border: 1px solid #333; border-radius: 12px;
+            padding: 15px; position: relative; transition: 0.3s; min-height: 130px;
+            display: flex; flex-direction: column; justify-content: space-between;
         }
-        .btn-arm { background: #003300; color: var(--neon-green); border-color: var(--neon-green); }
-        .btn-arm.armed { background: var(--neon-green); color: black; box-shadow: 0 0 10px var(--neon-green); }
+        .card.active { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 243, 255, 0.1); background: rgba(0, 40, 40, 0.6); }
+        .card.alert { border-color: var(--neon-red); animation: flash 0.5s infinite; }
         
-        .row-btn { display: flex; gap: 10px; margin-top: 10px; }
-
-        /* --- VISUALIZERS --- */
-        .hidden-cam { width: 100px; height: 100px; position: fixed; top: -1000px; } /* Kept off screen for stealth */
-        .preview-cam { width: 100%; height: 200px; background: #000; object-fit: cover; border-radius: 4px; border: 1px solid #333; }
+        .icon { font-size: 2rem; color: #555; margin-bottom: 5px; }
+        .card.active .icon { color: var(--neon-cyan); }
         
-        .meter-container { height: 10px; background: #222; width: 100%; margin: 10px 0; border-radius: 5px; overflow: hidden; }
-        .meter-fill { height: 100%; width: 0%; background: var(--neon-blue); transition: width 0.1s; }
-        .meter-fill.danger { background: var(--neon-red); }
+        h3 { margin: 0; font-size: 0.9rem; }
+        p { margin: 5px 0 0 0; font-size: 0.65rem; color: #888; line-height: 1.2; }
 
-        /* --- FOOTER PANIC --- */
-        .panic-dock {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            height: 80px; background: #000; border-top: 2px solid var(--neon-red);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 99;
-        }
-        .panic-btn {
-            width: 90%; height: 60px; background: var(--neon-red); color: white;
-            border: none; font-size: 1.5rem; font-weight: 900; letter-spacing: 3px;
-            text-transform: uppercase; clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
-            box-shadow: 0 0 20px rgba(255, 0, 60, 0.4);
-            animation: breathe 2s infinite;
+        /* TOGGLE */
+        .switch { position: absolute; top: 12px; right: 12px; width: 30px; height: 18px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; inset: 0; background: #333; border-radius: 20px; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .4s; }
+        input:checked + .slider { background: var(--neon-cyan); }
+        input:checked + .slider:before { transform: translateX(12px); }
+
+        /* DEAD MAN TIMER OVERLAY */
+        .timer-badge {
+            position: absolute; bottom: 10px; right: 10px; font-family: monospace;
+            color: var(--neon-amber); font-weight: bold; display: none;
         }
 
-        /* --- STEALTH OVERLAY (Fake Sleep) --- */
-        #stealthOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: black; z-index: 9999; display: none; cursor: none;
+        /* PANIC FOOTER */
+        .dock {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 80px;
+            background: rgba(0,0,0,0.9); border-top: 1px solid #333;
+            display: flex; gap: 10px; padding: 10px 20px; z-index: 100;
         }
+        .btn-panic {
+            flex: 2; background: var(--neon-red); color: white; border: none; border-radius: 8px;
+            font-size: 1.2rem; font-weight: 900; letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
+        }
+        .btn-tool { flex: 1; background: #222; border: 1px solid #444; color: var(--neon-cyan); border-radius: 8px; }
+
+        /* HIDDEN SENSORS */
+        video { position: fixed; top: -1000px; left: -1000px; }
         
-        /* --- LOGS --- */
-        .log-entry { font-size: 0.8rem; border-bottom: 1px solid #333; padding: 8px 0; color: #ccc; }
-        .log-entry img { display: block; margin-top: 5px; width: 100px; border: 1px solid #555; }
-        .log-timestamp { color: var(--neon-blue); margin-right: 10px; }
-
-        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(255, 0, 60, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 0, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 0, 60, 0); } }
-        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+        @keyframes flash { 0%, 100% { background: rgba(50,0,0,0.5); } 50% { background: rgba(100,0,0,0.8); } }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>Sentinel <span style="font-size:0.8em; color:#666;">ULTIMATE</span></h1>
-    <button class="btn" style="width: auto; padding: 5px 10px;" onclick="toggleStealth()">🌑 STEALTH</button>
+    <div class="brand">VANGUARD <span style="font-size:0.5em; color:#666; vertical-align: middle;">BLACK OPS</span></div>
+    <div style="font-size: 0.7rem; color: var(--neon-cyan);" id="gpsStatus">GPS: SEARCHING</div>
 </header>
 
 <main>
-    <div class="module" id="mod-snooper">
-        <div class="mod-header">
-            <div class="mod-title"><i class="material-icons">touch_app</i> SNOOPER TRAP</div>
-            <div style="font-size:0.7rem; color:#888;">STATUS: <span id="snooperStatus">OFFLINE</span></div>
+
+    <div class="section-title">KINETIC DEFENSE</div>
+    <div class="grid">
+        <div class="card" id="card-intruder">
+            <label class="switch"><input type="checkbox" onchange="toggle('intruder')"><span class="slider"></span></label>
+            <i class="material-icons icon">motion_photos_on</i>
+            <h3>Visual Sentry</h3>
+            <p>Motion detection via camera. Auto-records.</p>
         </div>
-        <p style="font-size: 0.8rem; color:#aaa;">If device is moved/grabbed, it silently snaps a selfie and logs the event.</p>
-        
-        <div class="row-btn">
-            <button class="btn btn-arm" id="btn-snooper" onclick="toggleSnooper()">ARM TRAP</button>
+        <div class="card" id="card-snoop">
+            <label class="switch"><input type="checkbox" onchange="toggle('snoop')"><span class="slider"></span></label>
+            <i class="material-icons icon">touch_app</i>
+            <h3>Snoop Trap</h3>
+            <p>Triggers if device is touched or moved.</p>
+        </div>
+        <div class="card" id="card-wreck">
+            <label class="switch"><input type="checkbox" onchange="toggle('wreck')"><span class="slider"></span></label>
+            <i class="material-icons icon">car_crash</i>
+            <h3>Wreck Detect</h3>
+            <p>High-G impact detection (Car/Bike).</p>
+        </div>
+        <div class="card" id="card-mag">
+            <label class="switch"><input type="checkbox" onchange="toggle('mag')"><span class="slider"></span></label>
+            <i class="material-icons icon">explore</i>
+            <h3>Mag-Field</h3>
+            <p>Detects magnets/metal moving nearby.</p>
         </div>
     </div>
 
-    <div class="module" id="mod-audio">
-        <div class="mod-header">
-            <div class="mod-title"><i class="material-icons">graphic_eq</i> IMPULSE DETECT</div>
-            <div style="font-size:0.7rem; color:#888;" id="db-readout">0 dB</div>
+    <div class="section-title">LOGIC & SITUATIONAL</div>
+    <div class="grid">
+        <div class="card" id="card-audio">
+            <label class="switch"><input type="checkbox" onchange="toggle('audio')"><span class="slider"></span></label>
+            <i class="material-icons icon">graphic_eq</i>
+            <h3>Shot Spotter</h3>
+            <p>High-Decibel impulse detection.</p>
         </div>
-        <div class="meter-container"><div class="meter-fill" id="audioMeter"></div></div>
-        <p style="font-size: 0.8rem; color:#aaa;">Detects sudden high-decibel spikes (Gunshots, Glass Break, Screams).</p>
-        
-        <div class="row-btn">
-            <button class="btn btn-arm" id="btn-audio" onclick="toggleAudioSentinel()">ARM SENSOR</button>
+        <div class="card" id="card-power">
+            <label class="switch"><input type="checkbox" onchange="toggle('power')"><span class="slider"></span></label>
+            <i class="material-icons icon">battery_alert</i>
+            <h3>Power Leech</h3>
+            <p>Alarms if charging cable is unplugged.</p>
         </div>
-    </div>
-
-    <div class="module" id="mod-video">
-        <div class="mod-header">
-            <div class="mod-title"><i class="material-icons">videocam</i> VISUAL SENTRY</div>
+        <div class="card" id="card-geo">
+            <label class="switch"><input type="checkbox" onchange="toggle('geo')"><span class="slider"></span></label>
+            <i class="material-icons icon">fmd_good</i>
+            <h3>Perimeter</h3>
+            <p>Alarms if device moves >50m from here.</p>
         </div>
-        <video id="mainCam" class="preview-cam" autoplay playsinline muted></video>
-        
-        <div class="row-btn">
-            <button class="btn btn-arm" id="btn-video" onclick="toggleVideoSentry()">ARM CAMERA</button>
-        </div>
-    </div>
-
-    <div class="module">
-        <div class="mod-header">
-            <div class="mod-title"><i class="material-icons">folder_shared</i> EVIDENCE LOG</div>
-            <button class="btn" style="width: auto; font-size: 0.7rem;" onclick="downloadLogs()">💾 DOWNLOAD ALL</button>
-        </div>
-        <div id="logFeed" style="max-height: 200px; overflow-y: auto;">
-            <div class="log-entry">System ready...</div>
+        <div class="card" id="card-deadman" onclick="resetDeadman()">
+            <label class="switch"><input type="checkbox" id="chk-deadman" onchange="toggle('deadman')"><span class="slider"></span></label>
+            <i class="material-icons icon">hourglass_bottom</i>
+            <h3>Dead Man</h3>
+            <p>Tap to reset timer or Panic triggers.</p>
+            <div class="timer-badge" id="dm-timer">05:00</div>
         </div>
     </div>
 </main>
 
-<div class="panic-dock">
-    <button class="panic-btn" onclick="triggerPanic()">PANIC</button>
+<div class="dock">
+    <button class="btn-panic" id="panicBtn" onclick="triggerPanic()">PANIC</button>
+    <button class="btn-tool" onclick="downloadLogs()"><i class="material-icons">download</i></button>
 </div>
 
-<canvas id="procCanvas" style="display:none;"></canvas>
-<div id="stealthOverlay" onclick="exitStealth()"><div style="position:absolute; bottom:20px; width:100%; text-align:center; color:#111;">Tap 1234 to unlock</div></div>
+<video id="cam" autoplay playsinline muted></video>
+<canvas id="cvs" style="display:none;"></canvas>
 
 <script>
-    // --- CORE SYSTEM ---
+    // --- CORE VARIABLES ---
+    const state = { intruder:false, snoop:false, wreck:false, mag:false, audio:false, power:false, geo:false, deadman:false };
     const logs = [];
-    const videoEl = document.getElementById('mainCam');
-    const canvas = document.getElementById('procCanvas');
-    const ctx = canvas.getContext('2d');
+    let startLoc = null;
+    let currentLoc = null;
+    let dmInterval = null;
+    let dmTime = 300; // 5 minutes default
     let stream = null;
-    
-    // --- STATE FLAGS ---
-    let state = {
-        snooper: false,
-        audio: false,
-        video: false,
-        panic: false
-    };
+    let audioCtx, analyser, dataArray;
+    let lastMag = 0;
 
-    // --- INITIALIZATION ---
-    async function init() {
+    // --- INIT ---
+    // User must click once to start audio context and sensors
+    document.body.addEventListener('click', async () => {
+        if(stream) return;
         try {
-            // Request Cam/Mic/Sensors
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
-            videoEl.srcObject = stream;
+            stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:true});
+            document.getElementById('cam').srcObject = stream;
             
-            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+            if(window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
                 await DeviceMotionEvent.requestPermission();
             }
+
+            // Init Audio
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+            const src = audioCtx.createMediaStreamSource(stream);
+            src.connect(analyser);
+            analyser.fftSize = 256;
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+            // Init Loops
+            requestAnimationFrame(sensorLoop);
+            setInterval(videoLoop, 500);
+            initGPS();
+            initBattery();
             
-            initAudioAnalysis();
-            startMotionLoops();
-            log("System", "All sensors initialized.");
-        } catch (e) {
-            alert("Permissions required for Sentinel to work.");
-            console.error(e);
+            log("System", "Vanguard Black Ops Initialized");
+        } catch(e) { console.error(e); alert("Sensors blocked by browser."); }
+    }, {once:true});
+
+    // --- SENSOR LOOPS ---
+    function sensorLoop() {
+        requestAnimationFrame(sensorLoop);
+        
+        // 1. Audio Logic
+        if(state.audio && analyser) {
+            analyser.getByteFrequencyData(dataArray);
+            const vol = dataArray.reduce((a,b)=>a+b)/dataArray.length;
+            if(vol > 200) alarm("audio", "GUNSHOT/EXPLOSION DETECTED");
         }
     }
-    
-    // Auto-init on first interaction to bypass browser blocks
-    document.body.addEventListener('click', () => {
-        if (!stream) init();
-    }, { once: true });
 
+    // 2. Video Logic
+    const cvs = document.getElementById('cvs');
+    const ctx = cvs.getContext('2d');
+    const vid = document.getElementById('cam');
+    let lastLight = 0;
 
-    // --- 1. SNOOPER TRAP (Accelerometer) ---
-    let lastAccel = { x:0, y:0, z:0 };
-    
-    function toggleSnooper() {
-        state.snooper = !state.snooper;
-        updateBtn('btn-snooper', state.snooper);
-        document.getElementById('snooperStatus').innerText = state.snooper ? "ARMED" : "OFFLINE";
-        if(state.snooper) log("Snooper", "Trap Armed. Do not move device.");
+    function videoLoop() {
+        if(!state.intruder) return;
+        cvs.width = 100; cvs.height = 100;
+        ctx.drawImage(vid, 0, 0, 100, 100);
+        const frame = ctx.getImageData(0,0,100,100);
+        let light = 0; 
+        for(let i=0; i<frame.data.length; i+=4) light += frame.data[i];
+        
+        if(Math.abs(light - lastLight) > 30000) alarm("intruder", "VISUAL MOVEMENT");
+        lastLight = light;
     }
 
-    window.addEventListener('devicemotion', (e) => {
-        if (!state.snooper) {
-            lastAccel = e.accelerationIncludingGravity; // Sync
-            return;
-        }
-
+    // 3. Motion & Mag Sensors
+    window.addEventListener('devicemotion', e => {
         const acc = e.accelerationIncludingGravity;
-        const delta = Math.abs(acc.x - lastAccel.x) + Math.abs(acc.y - lastAccel.y) + Math.abs(acc.z - lastAccel.z);
+        if(!acc) return;
         
-        // Threshold for "Pick Up"
-        if (delta > 3) { 
-            triggerSnooperEvent();
+        // Wreck (G-Force)
+        const g = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2) / 9.8;
+        if(state.wreck && g > 4) alarm("wreck", `IMPACT DETECTED: ${g.toFixed(1)}G`);
+
+        // Snoop (Tilt)
+        if(state.snoop) {
+            if(!window.baseAcc) window.baseAcc = acc;
+            const diff = Math.abs(acc.x - window.baseAcc.x) + Math.abs(acc.y - window.baseAcc.y);
+            if(diff > 2) alarm("snoop", "DEVICE MOVED");
         }
-        lastAccel = acc;
     });
-
-    function triggerSnooperEvent() {
-        // Debounce to prevent 100 selfies in 1 second
-        if (document.getElementById('mod-snooper').classList.contains('alert')) return;
-        
-        flashModule('mod-snooper');
-        takeEvidencePhoto("Snooper Trap Triggered (Device Moved)");
-        playShutterSound();
-    }
-
-
-    // --- 2. AUDIO SENTINEL (Gunshot/Impulse) ---
-    let audioCtx, analyser, dataArray;
     
-    function initAudioAnalysis() {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        analyser = audioCtx.createAnalyser();
-        const source = audioCtx.createMediaStreamSource(stream);
-        source.connect(analyser);
-        analyser.fftSize = 256;
-        dataArray = new Uint8Array(analyser.frequencyBinCount);
-        loopAudio();
+    // Magnetometer (If supported)
+    if('Magnetometer' in window) {
+        const magSensor = new Magnetometer({frequency: 10});
+        magSensor.addEventListener('reading', () => {
+            if(!state.mag) return;
+            const mag = Math.sqrt(magSensor.x**2 + magSensor.y**2 + magSensor.z**2);
+            if(lastMag !== 0 && Math.abs(mag - lastMag) > 50) alarm("mag", "MAGNETIC FIELD DISRUPTION");
+            lastMag = mag;
+        });
+        magSensor.start();
     }
 
-    function toggleAudioSentinel() {
-        state.audio = !state.audio;
-        updateBtn('btn-audio', state.audio);
-        if(state.audio) audioCtx.resume();
-    }
+    // --- NEW LOGIC MODULES ---
 
-    function loopAudio() {
-        requestAnimationFrame(loopAudio);
-        if (!analyser) return;
-        
-        analyser.getByteFrequencyData(dataArray);
-        const avgVol = dataArray.reduce((a,b)=>a+b) / dataArray.length;
-        
-        // Visualizer
-        const meter = document.getElementById('audioMeter');
-        meter.style.width = (avgVol / 255 * 100) + "%";
-        document.getElementById('db-readout').innerText = Math.round(avgVol) + " units";
-
-        // Logic: Gunshots are SUDDEN spikes.
-        // If volume jumps from <50 to >150 instantly -> Trigger
-        if (state.audio && avgVol > 180) {
-            meter.classList.add('danger');
-            triggerAudioEvent("High Impulse Noise Detected (Potential Gunshot/Crash)");
-        } else {
-            meter.classList.remove('danger');
+    // 4. Power Leech
+    async function initBattery() {
+        if('getBattery' in navigator) {
+            const bat = await navigator.getBattery();
+            bat.addEventListener('chargingchange', () => {
+                if(state.power && !bat.charging) alarm("power", "POWER CABLE DISCONNECTED");
+            });
         }
     }
 
-    function triggerAudioEvent(msg) {
-        if (document.getElementById('mod-audio').classList.contains('alert')) return;
-        flashModule('mod-audio');
-        log("Audio", msg);
-        // Start recording audio logic here (simplified for this demo)
-    }
-
-
-    // --- 3. VIDEO SENTRY (Motion) ---
-    function toggleVideoSentry() {
-        state.video = !state.video;
-        updateBtn('btn-video', state.video);
-    }
-
-    function startMotionLoops() {
-        // Check video motion every 500ms
-        setInterval(() => {
-            if (!state.video) return;
+    // 5. Perimeter (Geofence)
+    function initGPS() {
+        navigator.geolocation.watchPosition(pos => {
+            currentLoc = pos.coords;
+            document.getElementById('gpsStatus').innerText = `GPS: LOCKED (${pos.coords.accuracy.toFixed(0)}m)`;
             
-            canvas.width = 100; canvas.height = 100;
-            ctx.drawImage(videoEl, 0, 0, 100, 100);
-            const frame = ctx.getImageData(0,0,100,100);
-            
-            // Simplified motion logic (Brightness change)
-            // Real apps use pixel diff, but brightness is faster for web
-            let brightness = 0;
-            for(let i=0; i<frame.data.length; i+=4) brightness += frame.data[i];
-            brightness = brightness / (frame.data.length/4);
-            
-            // We need previous frame state, simplistic approach here:
-            if (window.lastBrightness && Math.abs(brightness - window.lastBrightness) > 20) {
-                triggerVideoEvent();
+            if(state.geo && startLoc) {
+                const d = getDist(startLoc.latitude, startLoc.longitude, currentLoc.latitude, currentLoc.longitude);
+                if(d > 0.05) alarm("geo", `PERIMETER BREACH (${(d*1000).toFixed(0)}m)`); // 0.05km = 50m
             }
-            window.lastBrightness = brightness;
-
-        }, 500);
+        }, e => {}, {enableHighAccuracy:true});
     }
 
-    function triggerVideoEvent() {
-        if (document.getElementById('mod-video').classList.contains('alert')) return;
-        flashModule('mod-video');
-        takeEvidencePhoto("Visual Motion Detected");
+    function getDist(lat1, lon1, lat2, lon2) {
+        const R = 6371; // km
+        const dLat = (lat2-lat1) * Math.PI/180;
+        const dLon = (lon2-lon1) * Math.PI/180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-
-    // --- SHARED UTILS ---
-    function takeEvidencePhoto(reason) {
-        canvas.width = videoEl.videoWidth;
-        canvas.height = videoEl.videoHeight;
-        ctx.drawImage(videoEl, 0, 0);
-        const imgData = canvas.toDataURL('image/jpeg');
-        log("Evidence", reason, imgData);
+    // 6. Dead Man's Switch
+    function startDeadman() {
+        document.getElementById('dm-timer').style.display = 'block';
+        dmTime = 300; // Reset to 5 mins
+        dmInterval = setInterval(() => {
+            dmTime--;
+            const m = Math.floor(dmTime/60);
+            const s = dmTime%60;
+            document.getElementById('dm-timer').innerText = `${m}:${s<10?'0':''}${s}`;
+            
+            if(dmTime <= 0) {
+                alarm("deadman", "USER UNRESPONSIVE");
+                triggerPanic(); // Auto panic
+                clearInterval(dmInterval);
+            }
+        }, 1000);
     }
 
-    function log(module, msg, imgData = null) {
-        const time = new Date().toLocaleTimeString();
-        const entry = { time, module, msg, imgData };
-        logs.push(entry);
-        
-        const div = document.createElement('div');
-        div.className = 'log-entry';
-        div.innerHTML = `<span class="log-timestamp">[${time}]</span> <strong>${module}:</strong> ${msg}`;
-        if (imgData) {
-            div.innerHTML += `<img src="${imgData}">`;
+    function resetDeadman() {
+        if(state.deadman) {
+            dmTime = 300; // Reset
+            // Visual feedback
+            const card = document.getElementById('card-deadman');
+            card.style.background = "var(--neon-cyan)";
+            setTimeout(() => card.style.background = "", 200);
         }
-        document.getElementById('logFeed').prepend(div);
     }
 
-    function flashModule(id) {
-        const el = document.getElementById(id);
-        el.classList.add('alert');
-        setTimeout(() => el.classList.remove('alert'), 2000);
-    }
-
-    function updateBtn(id, active) {
-        const btn = document.getElementById(id);
-        if (active) {
-            btn.classList.add('armed');
-            btn.innerText = "ARMED (STOP)";
+    // --- UTILS ---
+    function toggle(mode) {
+        state[mode] = !state[mode];
+        const card = document.getElementById('card-'+mode);
+        if(state[mode]) {
+            card.classList.add('active');
+            if(mode === 'snoop') window.baseAcc = null; // Reset baseline
+            if(mode === 'geo') startLoc = currentLoc; // Set fence post
+            if(mode === 'deadman') startDeadman();
         } else {
-            btn.classList.remove('armed');
-            btn.innerText = "ARM SENSOR";
+            card.classList.remove('active');
+            card.classList.remove('alert');
+            if(mode === 'deadman') { clearInterval(dmInterval); document.getElementById('dm-timer').style.display='none'; }
         }
     }
 
-    function playShutterSound() {
-        // Tiny distinct click
+    function alarm(mode, msg) {
+        if(document.getElementById('card-'+mode).classList.contains('alert')) return;
+        
+        // Flash UI
+        const card = document.getElementById('card-'+mode);
+        card.classList.add('alert');
+        setTimeout(() => card.classList.remove('alert'), 4000);
+        
+        // Log & Capture
+        cvs.width = vid.videoWidth; cvs.height = vid.videoHeight;
+        ctx.drawImage(vid, 0,0);
+        const img = cvs.toDataURL('image/jpeg');
+        log(mode.toUpperCase(), msg, img);
+        
+        // Sound
+        playBeep();
+    }
+
+    function log(type, msg, img=null) {
+        const time = new Date().toLocaleTimeString();
+        logs.push({time, type, msg});
+        console.log(`[${type}] ${msg}`);
+    }
+
+    function playBeep() {
+        if(!audioCtx) return;
         const o = audioCtx.createOscillator();
         const g = audioCtx.createGain();
         o.connect(g); g.connect(audioCtx.destination);
-        o.frequency.value = 1200;
-        o.start(); o.stop(audioCtx.currentTime + 0.05);
+        o.frequency.value = 1000;
+        o.start(); o.stop(audioCtx.currentTime + 0.1);
     }
 
-
-    // --- PANIC & EXPORT ---
-    function triggerPanic() {
-        state.panic = !state.panic;
-        const btn = document.querySelector('.panic-btn');
-        if (state.panic) {
-            btn.innerText = "STOP ALARM";
-            btn.style.background = "white";
-            btn.style.color = "red";
-            startSiren();
-            log("Panic", "Panic Button Activated Manually");
-        } else {
-            btn.innerText = "PANIC";
-            btn.style.background = "var(--neon-red)";
-            btn.style.color = "white";
-            stopSiren();
-        }
-    }
-
+    let panic = false;
     let sirenOsc;
-    function startSiren() {
-        if(audioCtx.state === 'suspended') audioCtx.resume();
-        sirenOsc = audioCtx.createOscillator();
-        sirenOsc.type = 'sawtooth';
-        sirenOsc.connect(audioCtx.destination);
-        sirenOsc.start();
-        // Wailing effect
-        const now = audioCtx.currentTime;
-        sirenOsc.frequency.setValueAtTime(600, now);
-        sirenOsc.frequency.linearRampToValueAtTime(1200, now + 0.5);
-        sirenOsc.frequency.linearRampToValueAtTime(600, now + 1.0);
-        // In real use, use setInterval for continuous wail
+    function triggerPanic() {
+        panic = !panic;
+        const btn = document.getElementById('panicBtn');
+        if(panic) {
+            btn.style.background = "#fff"; btn.style.color="red"; btn.innerText="STOP";
+            // Siren
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            sirenOsc = audioCtx.createOscillator();
+            sirenOsc.type = 'sawtooth';
+            sirenOsc.connect(audioCtx.destination);
+            sirenOsc.start();
+            // simple ramp
+            setInterval(() => {
+               if(!panic) return;
+               const t = audioCtx.currentTime;
+               sirenOsc.frequency.setValueAtTime(500, t);
+               sirenOsc.frequency.linearRampToValueAtTime(1000, t+0.5);
+            }, 500);
+        } else {
+            btn.style.background = ""; btn.style.color=""; btn.innerText="PANIC";
+            if(sirenOsc) { sirenOsc.stop(); sirenOsc=null; }
+            location.reload(); // Hard reset on stop
+        }
     }
-    function stopSiren() {
-        if(sirenOsc) { sirenOsc.stop(); sirenOsc = null; }
-    }
-
+    
     function downloadLogs() {
-        let content = "SENTINEL SECURITY LOG\nGenerated: " + new Date().toLocaleString() + "\n\n";
-        logs.forEach(l => {
-            content += `[${l.time}] ${l.module}: ${l.msg}\n`;
-        });
-        
-        // Text Log Download
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
+        let txt = "VANGUARD LOG:\n";
+        logs.forEach(l => txt += `[${l.time}] ${l.type}: ${l.msg}\n`);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = 'sentinel_logs.txt';
+        a.href = URL.createObjectURL(new Blob([txt], {type:'text/plain'}));
+        a.download = 'vanguard_logs.txt';
         a.click();
-        
-        // If there are images, we ideally zip them, but for a single file demo:
-        // We will just open the last image in a new tab
-        const lastImg = logs.find(l => l.imgData);
-        if(lastImg) {
-            const win = window.open();
-            win.document.write('<img src="' + lastImg.imgData + '">');
-        } else {
-            alert("Logs downloaded. No images captured yet.");
-        }
-    }
-
-    // --- STEALTH MODE ---
-    let stealthClicks = 0;
-    function toggleStealth() {
-        document.getElementById('stealthOverlay').style.display = 'block';
-        log("System", "Entered Stealth Mode");
-    }
-    function exitStealth() {
-        // Simple tap 3 times to exit for this demo
-        stealthClicks++;
-        if (stealthClicks >= 3) {
-            document.getElementById('stealthOverlay').style.display = 'none';
-            stealthClicks = 0;
-        } else {
-            // Fake error
-            navigator.vibrate(50);
-        }
     }
 </script>
 </body>
